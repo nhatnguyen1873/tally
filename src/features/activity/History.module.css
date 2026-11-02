@@ -1,0 +1,25 @@
+.entry {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+
+.body {
+  display: grid;
+  flex: 1;
+  gap: 0.125rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.detail {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.time {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}

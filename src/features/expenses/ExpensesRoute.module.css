@@ -1,0 +1,41 @@
+.summaryCard {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-5);
+}
+
+.status {
+  font-size: var(--text-xl);
+  font-weight: 700;
+}
+
+.summary {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.filters {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.more {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.summaryToggle {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-target);
+  color: var(--color-accent-strong);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--space-3);
+  margin: var(--space-2) 0;
+}

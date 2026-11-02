@@ -109,10 +109,17 @@ export function formatRelative(at: number, now: number, locale: string, justNow:
   return justNow
 }
 
+const currencyNames = new Map<string, Intl.DisplayNames>()
+
 /** A currency's name in the reader's language: "Vietnamese Dong", "Đồng Việt Nam". */
 export function currencyName(code: string, locale: string): string {
+  let names = currencyNames.get(locale)
+  if (!names) {
+    names = new Intl.DisplayNames([locale], { type: 'currency' })
+    currencyNames.set(locale, names)
+  }
   try {
-    return new Intl.DisplayNames([locale], { type: 'currency' }).of(code) ?? code
+    return names.of(code) ?? code
   } catch {
     return code
   }

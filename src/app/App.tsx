@@ -1,24 +1,30 @@
-import { TallyMark } from '../ui/TallyMark.tsx'
-import styles from './App.module.css'
+import { Suspense, useEffect } from 'react'
 
-// Placeholder shown until the core screens land in milestone 2.
-export function App() {
+import type { Catalog } from '../i18n/en.ts'
+import { I18nProvider } from '../i18n/I18nProvider.tsx'
+import type { Language } from '../i18n/language.ts'
+import { ToastProvider } from '../ui/Toast.tsx'
+import { applyTheme, usePrefs } from './prefs.ts'
+import { Routes } from './Routes.tsx'
+import { Shell } from './Shell.tsx'
+
+function Theme() {
+  const { theme } = usePrefs()
+  useEffect(() => {
+    applyTheme(theme)
+  }, [theme])
+  return null
+}
+
+export function App({ initial }: { initial: { language: Language; catalog: Catalog } }) {
   return (
-    <main className={styles.page}>
-      <div className={styles.card}>
-        <TallyMark className={styles.logo} />
-        <h1 className={styles.title}>Tally</h1>
-        <p className={styles.tagline}>
-          Split costs with friends. No sign-up, works offline, and only your group can read it.
-        </p>
-        <p className={styles.status}>
-          <span className={styles.badge}>Preview</span>
-          The first version is being built in the open.
-        </p>
-        <a className={styles.link} href="https://github.com/nhatnguyen1873/tally">
-          Follow along on GitHub
-        </a>
-      </div>
-    </main>
+    <I18nProvider initial={initial}>
+      <Theme />
+      <ToastProvider>
+        <Suspense fallback={<Shell />}>
+          <Routes />
+        </Suspense>
+      </ToastProvider>
+    </I18nProvider>
   )
 }
