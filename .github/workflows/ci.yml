@@ -104,6 +104,17 @@ jobs:
           WRANGLER_SEND_METRICS: false
       - name: Smoke test the live site
         run: |
-          curl -fsS --retry 10 --retry-delay 3 --retry-all-errors "$LIVE_URL/api/health" | grep -q '"ok":true'
-          curl -fsS "$LIVE_URL/" | grep -q '<h1'
-          echo "Live at $LIVE_URL"
+          # Passes once the live page serves this build's script and the Worker
+          # answers. A first deploy can take a minute or two to start routing.
+          script=$(grep -o '/assets/index-[^"]*\.js' dist/client/index.html | head -1)
+          for attempt in $(seq 1 30); do
+            if curl -fsS "$LIVE_URL/" | grep -qF "$script" &&
+              curl -fsS "$LIVE_URL/api/health" | grep -q '"ok":true'; then
+              echo "Live at $LIVE_URL, serving $script"
+              exit 0
+            fi
+            echo "Not live yet (attempt $attempt of 30); retrying in 5 s"
+            sleep 5
+          done
+          echo "::error::$LIVE_URL did not serve this build within 150 s"
+          exit 1
