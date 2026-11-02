@@ -18,6 +18,7 @@ export function Page({
   back,
   actions,
   below,
+  footer,
   children,
 }: {
   /** The browser tab's title. */
@@ -30,8 +31,10 @@ export function Page({
   barTitle?: string
   back?: { href: string; label: string }
   actions?: ReactNode
-  /** Pinned under the header, like a group's tabs. */
+  /** Pinned under the header. */
   below?: ReactNode
+  /** Fixed to the bottom of the screen, like a group's tabs. */
+  footer?: ReactNode
   children: ReactNode
 }) {
   const { t } = useI18n()
@@ -76,6 +79,7 @@ export function Page({
         </h1>
         {children}
       </main>
+      {footer}
     </div>
   )
 }

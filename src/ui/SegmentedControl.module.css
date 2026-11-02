@@ -4,13 +4,20 @@
   border: 0;
 }
 
+/* Two by two on phones, one row when there's room. */
 .segments {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--space-1);
   padding: var(--space-1);
   border-radius: var(--radius-m);
   background: var(--color-surface-2);
+}
+
+@media (min-width: 34rem) {
+  .segments {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 .segment {

@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import type { Currency } from '../domain/money.ts'
 import { useI18n } from '../i18n/I18nProvider.tsx'
 import {
   amountOf,
@@ -22,34 +21,33 @@ export function AmountInput({
   ids,
   value,
   onValue,
-  currency,
+  digits,
   className,
 }: {
   ids: FieldIds
   value: number | null
   onValue: (amount: number | null) => void
-  currency: Currency
+  /** Decimal places: the currency's, or 2 for percentages. */
+  digits: number
   className?: string
 }) {
   const { locale } = useI18n()
   const symbols = useMemo(() => numberSymbols(locale), [locale])
   const input = useRef<HTMLInputElement>(null)
-  const [text, setText] = useState(() => displayAmount(value, currency.digits, symbols))
+  const [text, setText] = useState(() => displayAmount(value, digits, symbols))
   const [shown, setShown] = useState(value)
 
   // A new value from outside (prefilled, or reset) replaces what was typed.
   if (value !== shown) {
     setShown(value)
-    if (
-      amountOf(readAmountText(text, currency.digits, symbols).decimal, currency.digits) !== value
-    ) {
-      setText(displayAmount(value, currency.digits, symbols))
+    if (amountOf(readAmountText(text, digits, symbols).decimal, digits) !== value) {
+      setText(displayAmount(value, digits, symbols))
     }
   }
 
   function accept(raw: string, caret: number) {
-    const read = readAmountText(raw, currency.digits, symbols)
-    const amount = amountOf(read.decimal, currency.digits)
+    const read = readAmountText(raw, digits, symbols)
+    const amount = amountOf(read.decimal, digits)
     const typedBefore = typedCharacters(raw.slice(0, caret), symbols)
     setText(read.display)
     setShown(amount)
@@ -63,7 +61,7 @@ export function AmountInput({
 
   useEffect(() => {
     const element = input.current
-    if (!element || currency.digits === 0) return
+    if (!element || digits === 0) return
     const onBeforeInput = (event: InputEvent) => {
       if ((event.data !== '.' && event.data !== ',') || event.data === symbols.decimal) return
       event.preventDefault()
@@ -84,10 +82,10 @@ export function AmountInput({
       {...ids}
       className={[fieldStyles.input, fieldStyles.amount, className].filter(Boolean).join(' ')}
       type="text"
-      inputMode={currency.digits > 0 ? 'decimal' : 'numeric'}
+      inputMode={digits > 0 ? 'decimal' : 'numeric'}
       autoComplete="off"
       value={text}
-      placeholder={displayAmount(0, currency.digits, symbols)}
+      placeholder={displayAmount(0, digits, symbols)}
       onChange={(event) => {
         accept(event.target.value, event.target.selectionStart ?? event.target.value.length)
       }}

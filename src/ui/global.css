@@ -4,7 +4,10 @@
   box-sizing: border-box;
 }
 
+/* The background is on html as well as body: WebKit reports a body background
+   it promotes to the canvas as transparent, which misleads contrast checks. */
 html {
+  background: var(--color-bg);
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }

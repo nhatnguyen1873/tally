@@ -23,6 +23,7 @@ export {
   HandCoins,
   List,
   Plus,
+  Receipt,
   RotateCcwClock,
   Scale,
   Search,
@@ -30,6 +31,7 @@ export {
   Trash,
   Undo2,
   UserPlus,
+  Users,
   X,
 } from 'lucide'
 export type { IconNode }
