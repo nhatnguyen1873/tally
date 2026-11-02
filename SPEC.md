@@ -235,7 +235,7 @@ The protocol runs over a WebSocket at `/api/g/:groupId/ws`.
 
 ## 10. Performance budgets
 
-- **JavaScript:** at most 100 KB gzipped on the first load of any screen: the app, one language and that screen's code (about 60 KB of that is React, leaving at most 40 KB for the app).
+- **JavaScript:** at most 110 KB gzipped on the first load of any screen: the app, one language and that screen's code (React 19 is 67.5 KB of that, leaving about 40 KB for the app).
 - **CSS:** at most 15 KB gzipped.
 - **On demand:** the QR code, CSV export, About page and inactive language load only when needed.
 - **First paint:** the build prerenders the home screen, in English and in Vietnamese, and a loading frame for every other address into the HTML. The inline script shows the one that fits, so text appears before any JavaScript runs. Once the browser has shown it, the app replaces it with the same markup (instead of hydrating), keeping keyboard focus where it was.

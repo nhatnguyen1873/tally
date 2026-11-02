@@ -9,7 +9,7 @@ import { gzipSync } from 'node:zlib'
 
 const DIST = 'dist/client'
 const MANIFEST = 'dist/client-manifest.json'
-const BUDGETS = { js: 100_000, css: 15_000 } // gzipped bytes
+const BUDGETS = { js: 110_000, css: 15_000 } // gzipped bytes
 const CATALOGS = ['src/i18n/en.ts', 'src/i18n/vi.ts']
 // Home ships with the entry and loads the group list as soon as it renders.
 const HOME_LOADS = 'src/sync/groups.ts'
