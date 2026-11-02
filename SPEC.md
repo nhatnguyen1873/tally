@@ -238,10 +238,11 @@ The protocol runs over a WebSocket at `/api/g/:groupId/ws`.
 - **JavaScript:** at most 100 KB gzipped on first load of any route (about 60 KB of that is React, leaving at most 40 KB for the app).
 - **CSS:** at most 15 KB gzipped.
 - **On demand:** the QR code, CSV export, About page and inactive language load only when needed.
-- **Lighthouse:** run on the production build with mobile defaults (about 1.6 Mbps, 150 ms round trip, 4× slower CPU). Targets: Performance ≥ 95, Accessibility 100, Best Practices ≥ 95, LCP ≤ 2.0 s, Total Blocking Time ≤ 150 ms, CLS ≤ 0.05.
+- **First paint:** the build prerenders the first screen into the HTML, and the app hydrates it, so text appears before any JavaScript runs.
+- **Lighthouse:** run on the production build, served compressed as Cloudflare serves it, with mobile defaults (about 1.6 Mbps, 150 ms round trip, 4× slower CPU). Targets: Performance ≥ 95, Accessibility 100, Best Practices ≥ 95, LCP ≤ 2.0 s, Total Blocking Time ≤ 150 ms, CLS ≤ 0.05.
 - **Repeat visits:** load from the service worker with no network.
 - **Long lists:** the expense list stays smooth at 2,000 expenses with Chrome's CPU slowed 4× as a stand-in for a low-end Android phone, using `content-visibility` and memoized rows. Virtualization is added only if profiling calls for it.
-- **Enforcement:** CI checks every budget with size-limit and Lighthouse CI.
+- **Enforcement:** CI checks every budget with a bundle-size script (it measures exactly what a first visit downloads) and Lighthouse CI.
 
 ## 11. Design
 
@@ -285,7 +286,7 @@ tally/
 - **Relay tests** run in the Workers runtime (`@cloudflare/vitest-pool-workers`) and cover auth, deduplication, cursors, limits, broadcast, the retention alarm and re-upload after deletion.
 - **End-to-end tests** (Playwright, Chromium and mobile WebKit) run the walkthrough in section 3 with up to four browser contexts as separate phones, one of them going offline midway. They also cover joining by link, restoring from Activity, the CSV contents and both languages.
 - **Accessibility:** axe runs on every screen, in both themes and both languages.
-- **CI:** GitHub Actions runs on every push: typecheck, lint, unit and property tests, relay tests, build, size-limit, end-to-end tests with axe, then Lighthouse CI (median of three runs).
+- **CI:** GitHub Actions runs on every push: typecheck, lint, unit and property tests, relay tests, build, bundle size, end-to-end tests with axe, then Lighthouse CI (median of three runs).
 - **Deploy:** on `main`, and only after every check passes, Wrangler deploys the Worker, its static assets and any Durable Object migrations. A smoke test then loads the live site and confirms the relay answers, without creating any data.
 - **Secrets:** `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` live in GitHub Actions secrets, which you add. I never see the token.
 - **Rollback:** `wrangler rollback` restores the previous version in seconds.
