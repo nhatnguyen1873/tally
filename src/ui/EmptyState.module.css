@@ -1,0 +1,19 @@
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  padding: var(--space-10) var(--space-6);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-l);
+  text-align: center;
+}
+
+.icon {
+  color: var(--color-text-muted);
+}
+
+.text {
+  max-width: 22rem;
+  margin: 0;
+  color: var(--color-text-muted);
+}

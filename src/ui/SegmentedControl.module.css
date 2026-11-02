@@ -1,0 +1,50 @@
+.group {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.segments {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: var(--radius-m);
+  background: var(--color-surface-2);
+}
+
+.segment {
+  position: relative;
+  display: grid;
+}
+
+.radio {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.label {
+  display: grid;
+  place-items: center;
+  min-height: var(--tap-target);
+  padding: 0 var(--space-2);
+  border-radius: calc(var(--radius-m) - var(--space-1));
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-align: center;
+}
+
+.radio:checked + .label {
+  background: var(--color-surface);
+  box-shadow: var(--shadow-1);
+  color: var(--color-text);
+}
+
+.radio:focus-visible + .label {
+  outline: var(--focus-ring);
+  outline-offset: 1px;
+}

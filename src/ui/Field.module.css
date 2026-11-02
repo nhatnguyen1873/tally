@@ -1,0 +1,74 @@
+.field {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.label {
+  font-weight: 600;
+}
+
+.input,
+.select {
+  width: 100%;
+  min-height: 3rem;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  /* 16 px or more stops iOS from zooming into the field. */
+  font-size: max(1rem, 16px);
+}
+
+.select {
+  appearance: none;
+  padding-right: var(--space-10);
+  background-image:
+    linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position:
+    right 1.35rem center,
+    right 1rem center;
+  background-repeat: no-repeat;
+  background-size:
+    0.35rem 0.35rem,
+    0.35rem 0.35rem;
+}
+
+.input::placeholder {
+  color: var(--color-text-muted);
+  opacity: 1;
+}
+
+.input[aria-invalid],
+.select[aria-invalid] {
+  border-color: var(--color-negative);
+}
+
+.input:disabled,
+.select:disabled {
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+}
+
+.hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.error {
+  margin: 0;
+  color: var(--color-negative);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+/* For amounts: large, right-aligned digits that don't shift as they change. */
+.amount {
+  min-height: 3.5rem;
+  font-size: var(--text-2xl);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}

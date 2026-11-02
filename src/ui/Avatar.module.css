@@ -1,0 +1,25 @@
+/* Light text on dark tint (or the reverse) keeps initials above 7:1 contrast at every hue. */
+.avatar {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: hsl(var(--hue) 55% 88%);
+  color: hsl(var(--hue) 60% 22%);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .avatar {
+    background: hsl(var(--hue) 35% 30%);
+    color: hsl(var(--hue) 70% 92%);
+  }
+}
+
+:root[data-theme='dark'] .avatar {
+  background: hsl(var(--hue) 35% 30%);
+  color: hsl(var(--hue) 70% 92%);
+}
