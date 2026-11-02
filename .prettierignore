@@ -1,0 +1,7 @@
+*.md
+pnpm-lock.yaml
+worker-configuration.d.ts
+coverage
+playwright-report
+test-results
+.lighthouseci
