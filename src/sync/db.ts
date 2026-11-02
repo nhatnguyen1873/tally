@@ -83,7 +83,7 @@ export async function saveOps(record: GroupRecord, ops: readonly Op[]): Promise<
 export async function deleteGroup(groupId: string): Promise<void> {
   const tx = (await database()).transaction(['groups', 'ops'], 'readwrite')
   // Operation keys are [groupId, opId], and op IDs are base64url, so this covers all of them.
-  const everyOp = IDBKeyRange.bound([groupId, ''], [groupId, '￿'])
+  const everyOp = IDBKeyRange.bound([groupId, ''], [groupId, '\uffff'])
   await Promise.all([
     tx.objectStore('groups').delete(groupId),
     tx.objectStore('ops').delete(everyOp),

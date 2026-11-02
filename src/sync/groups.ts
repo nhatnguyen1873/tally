@@ -159,20 +159,21 @@ const stores = new Map<string, Promise<GroupStore | null>>()
 
 /** The shared store for a group, or null if this device doesn't have it. */
 export function groupStore(groupId: string): Promise<GroupStore | null> {
+  // Callers like React's use() need the same promise every time, so a missing
+  // group stays cached until a change for it arrives.
   let store = stores.get(groupId)
   if (!store) {
     store = GroupStore.load(groupId)
     stores.set(groupId, store)
-    // Don't remember that a group is missing: it may still arrive.
-    void store.then((loaded) => {
-      if (!loaded) stores.delete(groupId)
-    })
   }
   return store
 }
 
 onGroupChange(({ groupId, local }) => {
-  if (!local) void stores.get(groupId)?.then((loaded) => loaded?.reload())
+  void stores.get(groupId)?.then((loaded) => {
+    if (!loaded) stores.delete(groupId)
+    else if (!local) void loaded.reload()
+  })
 })
 
 // --- Creating and removing groups --------------------------------------------

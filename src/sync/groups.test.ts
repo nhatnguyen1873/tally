@@ -254,6 +254,37 @@ describe('another tab', () => {
     expect(await otherTab.groupStore(id)).toBeNull()
   })
 
+  it('notices a group that arrives after it looked for it', async () => {
+    vi.resetModules()
+    const otherTab = await import('./groups.ts')
+    const id = 'arrives-later-00000000'
+    expect(await otherTab.groupStore(id)).toBeNull()
+
+    // This tab receives the group (as joining will in milestone 3) and opens it.
+    const actor = 'this-device-00000'
+    const me = 'member-minh-00000'
+    const at = (count: number) => ({ wall: Date.now(), count, node: actor })
+    const ops = [
+      makeOp(at(0), me, 'group', id, { name: 'Flat', currency: VND }),
+      makeOp(at(1), me, 'member', me, { name: 'Minh' }),
+    ]
+    const record = {
+      id,
+      secret: 's'.repeat(43),
+      actor,
+      me,
+      clock: ops[1]?.hlc ?? null,
+      addedAt: Date.now(),
+      openedAt: Date.now(),
+      readUpTo: null,
+    }
+    await saveOps(record, ops)
+    await (await groupStore(id))?.update({ openedAt: Date.now() })
+    await new Promise((resolve) => setTimeout(resolve, 20))
+
+    expect((await otherTab.groupStore(id))?.getSnapshot().state.group?.name).toBe('Flat')
+  })
+
   it('ignores messages it doesn’t understand', async () => {
     const changes: string[] = []
     const stop = onGroupChange(({ groupId }) => changes.push(groupId))
