@@ -1,0 +1,90 @@
+/*
+ * Design tokens. Light values live on :root; dark values apply when the
+ * system prefers dark (unless the user forced light), or when forced dark.
+ * Text colors meet WCAG AA (4.5:1) on both --color-bg and --color-surface.
+ */
+:root {
+  color-scheme: light;
+
+  --color-bg: #f6f5f1;
+  --color-surface: #ffffff;
+  --color-surface-2: #efede7;
+  --color-text: #1b1c20;
+  --color-text-muted: #595c66;
+  --color-border: #dedbd3;
+  --color-border-strong: #8a8d95;
+  --color-accent: #4338ca;
+  --color-accent-hover: #3730a3;
+  --color-accent-strong: #3730a3;
+  --color-accent-soft: #e8e6fb;
+  --color-on-accent: #ffffff;
+  --color-positive: #0f7b45;
+  --color-negative: #b42318;
+
+  --font-sans:
+    system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 2.25rem;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+
+  --radius-s: 0.375rem;
+  --radius-m: 0.75rem;
+  --radius-l: 1.25rem;
+
+  --tap-target: 2.75rem;
+  --focus-ring: 3px solid var(--color-accent);
+  --duration-fast: 150ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    --color-bg: #121316;
+    --color-surface: #1b1d21;
+    --color-surface-2: #24272c;
+    --color-text: #ecedef;
+    --color-text-muted: #a3a7b0;
+    --color-border: #2e3138;
+    --color-border-strong: #6b6f78;
+    --color-accent: #a5b4fc;
+    --color-accent-hover: #c7d0fe;
+    --color-accent-strong: #c7d0fe;
+    --color-accent-soft: #2a2d52;
+    --color-on-accent: #14123a;
+    --color-positive: #4ade80;
+    --color-negative: #f97066;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --color-bg: #121316;
+  --color-surface: #1b1d21;
+  --color-surface-2: #24272c;
+  --color-text: #ecedef;
+  --color-text-muted: #a3a7b0;
+  --color-border: #2e3138;
+  --color-border-strong: #6b6f78;
+  --color-accent: #a5b4fc;
+  --color-accent-hover: #c7d0fe;
+  --color-accent-strong: #c7d0fe;
+  --color-accent-soft: #2a2d52;
+  --color-on-accent: #14123a;
+  --color-positive: #4ade80;
+  --color-negative: #f97066;
+}
