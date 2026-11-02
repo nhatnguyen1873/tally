@@ -66,6 +66,8 @@ export interface Activity {
   /** Milliseconds since the epoch, by the writer's clock. */
   readonly at: number
   readonly by: MemberId
+  /** The device that wrote it, so a device can tell its own changes from others'. */
+  readonly actor: string
   readonly entity: EntityKind
   readonly key: string
   readonly kind: ActivityKind
@@ -260,6 +262,7 @@ class Fold {
       hlc: op.hlc,
       at: hlcDecode(op.hlc)?.wall ?? 0,
       by: op.by,
+      actor: op.actor,
       entity: op.entity,
       key: op.key,
       kind,
