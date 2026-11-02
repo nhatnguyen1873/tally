@@ -56,6 +56,24 @@ h1:focus {
   outline: none;
 }
 
+/*
+ * Before the app starts, index.html holds prerendered first screens (see
+ * src/prerender.tsx). Show only the one that fits: the home screen in the
+ * page's language, or the frame for other addresses. The boot script in
+ * index.html sets data-route and lang; without JavaScript, the English home
+ * screen shows.
+ */
+[data-first-paint] {
+  display: none;
+}
+
+html:not([data-route]) [data-first-paint='home'][lang='en'],
+html[data-route='home'][lang='en'] [data-first-paint='home'][lang='en'],
+html[data-route='home'][lang='vi'] [data-first-paint='home'][lang='vi'],
+html[data-route='other'] [data-first-paint='other'] {
+  display: block;
+}
+
 .visually-hidden {
   position: absolute !important;
   width: 1px !important;

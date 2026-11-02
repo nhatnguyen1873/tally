@@ -2,6 +2,7 @@ import './ui/tokens.css'
 import './ui/global.css'
 
 import { StrictMode } from 'react'
+import { flushSync } from 'react-dom'
 import { createRoot } from 'react-dom/client'
 
 import { App } from './app/App.tsx'
@@ -27,18 +28,55 @@ window.addEventListener('vite:preloadError', (event) => {
 const root = document.getElementById('root')
 if (!root) throw new Error('Missing #root element')
 
+/**
+ * Resolves once the browser has shown the first contentful paint, or after
+ * 100 ms at most (a hidden tab doesn't paint).
+ */
+function firstPaintShown(): Promise<void> {
+  return new Promise((resolve) => {
+    if (!PerformanceObserver.supportedEntryTypes.includes('paint')) {
+      resolve()
+      return
+    }
+    const done = () => {
+      observer.disconnect()
+      clearTimeout(timeout)
+      resolve()
+    }
+    const observer = new PerformanceObserver((list) => {
+      if (list.getEntriesByName('first-contentful-paint').length > 0) done()
+    })
+    const timeout = setTimeout(done, 100)
+    observer.observe({ type: 'paint', buffered: true })
+  })
+}
+
 const prefs = getPrefs()
 applyTheme(prefs.theme)
 const language = resolveLanguage(prefs.language, navigator.languages)
 
-// The build prerenders the app's frame into #root (see src/prerender.tsx), so
-// it paints before this code has arrived; the app replaces it.
-void loadCatalog(language).then((catalog) => {
-  createRoot(root).render(
-    <StrictMode>
-      <App initial={{ language, catalog }} />
-    </StrictMode>,
-  )
+// The build prerenders the first screens into #root (see src/prerender.tsx),
+// so one paints before this code has even arrived, and the app replaces it
+// with the same markup. On a fast load, wait until it's on screen first:
+// replaced before the browser has shown it, it wouldn't count as the first
+// paint, and the largest contentful paint would wait for the app.
+void Promise.all([loadCatalog(language), firstPaintShown()]).then(([catalog]) => {
+  // Someone may have tabbed to a link on the prerendered screen already; keep
+  // their place when the app replaces it.
+  const focused = document.activeElement
+  const href =
+    focused instanceof HTMLAnchorElement && root.contains(focused)
+      ? focused.getAttribute('href')
+      : null
+  const app = createRoot(root)
+  flushSync(() => {
+    app.render(
+      <StrictMode>
+        <App initial={{ language, catalog }} />
+      </StrictMode>,
+    )
+  })
+  if (href) root.querySelector<HTMLElement>(`a[href="${CSS.escape(href)}"]`)?.focus()
 })
 
 // Safari has no requestIdleCallback.

@@ -41,6 +41,11 @@ export function I18nProvider({ initial, children }: { initial: Loaded; children:
   return <I18nContext value={value}>{children}</I18nContext>
 }
 
+/** A fixed language, for rendering outside the app (the build's prerender). */
+export function I18nStatic({ value, children }: { value: I18n; children: ReactNode }) {
+  return <I18nContext value={value}>{children}</I18nContext>
+}
+
 export function useI18n(): I18n {
   const value = use(I18nContext)
   if (!value) throw new Error('useI18n needs an I18nProvider')

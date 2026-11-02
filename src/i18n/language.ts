@@ -1,4 +1,4 @@
-import { type Catalog, en } from './en.ts'
+import type { Catalog } from './en.ts'
 
 export type Language = 'en' | 'vi'
 export type LanguagePreference = Language | 'system'
@@ -30,7 +30,10 @@ export function localeFor(language: Language, phoneLanguages: readonly string[])
   )
 }
 
-/** English ships with the app; Vietnamese loads on demand. */
+/**
+ * Each catalog is its own file, so a phone downloads only the language it
+ * uses. The boot script in index.html preloads it.
+ */
 export async function loadCatalog(language: Language): Promise<Catalog> {
-  return language === 'vi' ? (await import('./vi.ts')).vi : en
+  return language === 'vi' ? (await import('./vi.ts')).vi : (await import('./en.ts')).en
 }

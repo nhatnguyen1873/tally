@@ -18,8 +18,47 @@
       property="og:description"
       content="Split shared expenses with friends. No sign-up, works offline."
     />
+    <!-- Before first paint: applies the saved theme and language, marks whether
+         this is the home screen, so the right prerendered first screen shows (see
+         src/ui/global.css), and preloads the language's catalog. Keep in step with
+         src/app/prefs.ts and resolveLanguage in src/i18n/language.ts. The build
+         fills in the catalog files and adds this script's hash to the CSP. -->
+    <script>
+      var root = document.documentElement
+      root.dataset.route = location.pathname === '/' ? 'home' : 'other'
+      var prefs = {}
+      try {
+        prefs = JSON.parse(localStorage.getItem('tally:prefs') || '{}') || {}
+      } catch (error) {}
+      if (prefs.theme === 'light' || prefs.theme === 'dark') root.dataset.theme = prefs.theme
+      var language = prefs.language
+      if (language !== 'en' && language !== 'vi') {
+        language = 'en'
+        var phone = navigator.languages || []
+        for (var i = 0; i < phone.length; i++) {
+          var base = String(phone[i]).toLowerCase().split('-')[0]
+          if (base === 'en' || base === 'vi') {
+            language = base
+            break
+          }
+        }
+      }
+      root.lang = language
+      // The build fills in each language's catalog file; preloading the one this
+      // phone uses saves the app a round trip when it starts.
+      var catalogs = {}
+      if (catalogs[language]) {
+        var preload = document.createElement('link')
+        preload.rel = 'modulepreload'
+        preload.href = catalogs[language]
+        document.head.appendChild(preload)
+      }
+    </script>
   </head>
   <body>
+    <noscript>
+      <p>Tally needs JavaScript to run. · Tally cần JavaScript để chạy.</p>
+    </noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
