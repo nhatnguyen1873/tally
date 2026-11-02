@@ -51,7 +51,7 @@ Tally is a shared-expense tracker for small groups: a trip, a shared flat, a gro
 10. **Deleting data:** v1 has no "delete for everyone", only "Remove from this device".
 11. **Relay limits:** 4 KB per operation, 100 operations per message, 20,000 operations and 50 open connections per group, and 120 operations per minute per connection.
 12. **Browsers:** the current and previous major versions of Chrome, Edge, Firefox and Samsung Internet, plus Safari and iOS 16.4 or later.
-13. **Libraries:** wouter (routing), idb (IndexedDB), lucide-react (icons), uqr (QR codes), vite-plugin-pwa (service worker), @cloudflare/vite-plugin (runs the Worker during development), React Compiler, and a small typed i18n layer instead of a large library.
+13. **Libraries:** wouter (routing), idb (IndexedDB), Lucide's icon data (drawn by a small component, a few dozen bytes per icon), uqr (QR codes), vite-plugin-pwa (service worker), @cloudflare/vite-plugin (runs the Worker during development), React Compiler, and a small typed i18n layer instead of a large library.
 14. **Vietnamese copy:** I write it, and you review it at milestone 2.
 15. **Phone testing:** check-ins happen on the live address. Service workers and WebCrypto need HTTPS, so trying unpushed work on a phone goes through a free Cloudflare quick tunnel (it needs `cloudflared`, but no account).
 16. **Commit identity:** Nhat Nguyen <nhatnguyen1873@gmail.com>, matching your first commit and set for this repo only. Your global git config, which has your work email, stays as it is.
@@ -85,7 +85,7 @@ Inside a group, a bottom tab bar holds Expenses, Balances and Activity. The head
 | Expense form | `/g/:id/e/new`, `/g/:id/e/:eid` | Amount (formatted as you type), title, category, paid by, date, and split mode with a row per person and a live "left to assign". In edit mode: Delete (with Undo) and this expense's change history |
 | Payment form | `/g/:id/pay/new`, `/g/:id/pay/:pid` | From, to, amount and date, prefilled when opened from a suggestion. In edit mode: Delete (with Undo) |
 | Balances | `/g/:id/balances` | Each member's net balance (in words and signs, never color alone) with paid and share totals, the **Settle up** list with "Mark as paid" and "Other amount", and spending by category |
-| Activity | `/g/:id/activity` | Every change, newest first, attributed, with Restore on deletions. The tab shows an unread dot |
+| Activity | `/g/:id/activity` | Every change, newest first, attributed, with Restore on a deletion that is still that item's latest change. The tab shows an unread dot |
 | Group settings | `/g/:id/settings` | Group name, currency (locked once used), members (add, rename, remove), "You are Minh · Switch", invite (link, QR code, Share), Export CSV, app language and theme, and "Remove from this device", which warns about changes that haven't synced yet |
 | Share sheet | (dialog) | QR code, Copy link, and Share where the browser supports it, with a reminder that anyone with the link can see and edit the group |
 | About | `/about` | How the encryption works, exactly what the relay can see and how long it keeps it, no analytics, and links to the source code and to report a problem (GitHub issues) |
@@ -183,7 +183,7 @@ Creating an item sets all of its required fields, deleting it sets `deleted: tru
 - **Keys:** HKDF-SHA-256 derives two values from the secret: an AES-256-GCM encryption key and a separate access token for the relay.
 - **Per operation:** each operation is encrypted with a fresh random 12-byte IV. The group ID and operation ID are bound as associated data, so ciphertext can't be moved to another group or replayed under another ID.
 - **What the relay sees:** it stores only `{ seq, id, iv, ciphertext, receivedAt }` and a SHA-256 hash of the access token. It can see group IDs, operation sizes and timing, and IP addresses. It can't see names, amounts or anything else.
-- **Hardening:** a strict Content-Security-Policy, no third-party scripts, and `Referrer-Policy: no-referrer`, because an injected script could read keys.
+- **Hardening:** a strict Content-Security-Policy, no third-party scripts, and `Referrer-Policy: no-referrer`, because an injected script could read keys. The one inline script (it applies the theme and language before the first paint) is allowed by its hash, which the build computes, so no other inline script can run.
 
 ### 6.4 On the device
 
@@ -221,7 +221,7 @@ The protocol runs over a WebSocket at `/api/g/:groupId/ws`.
 ## 8. Languages
 
 - **Choice:** English and Vietnamese, defaulting to the phone's language and switchable (System, English, Tiếng Việt).
-- **Catalogs:** typed message catalogs. TypeScript enforces that `vi` defines every key in `en`, and the inactive language loads on demand.
+- **Catalogs:** typed message catalogs. TypeScript enforces that `vi` defines every key in `en`. Each language is its own file: the page preloads the phone's language before the app starts, and the other loads on demand.
 - **Formatting:** numbers, money and dates use `Intl` with the active language: "1.200.000 ₫" in Vietnamese and "₫1,200,000" in English. Relative times read "2 minutes ago" or "2 phút trước", and `<html lang>` follows the active language.
 
 ## 9. Accessibility (WCAG 2.2 AA)
@@ -235,10 +235,11 @@ The protocol runs over a WebSocket at `/api/g/:groupId/ws`.
 
 ## 10. Performance budgets
 
-- **JavaScript:** at most 100 KB gzipped on first load of any route (about 60 KB of that is React, leaving at most 40 KB for the app).
+- **JavaScript:** at most 100 KB gzipped on the first load of any screen: the app, one language and that screen's code (about 60 KB of that is React, leaving at most 40 KB for the app).
 - **CSS:** at most 15 KB gzipped.
 - **On demand:** the QR code, CSV export, About page and inactive language load only when needed.
-- **First paint:** the build prerenders the first screen into the HTML, and the app hydrates it, so text appears before any JavaScript runs.
+- **First paint:** the build prerenders the home screen, in English and in Vietnamese, and a loading frame for every other address into the HTML. The inline script shows the one that fits, so text appears before any JavaScript runs. Once the browser has shown it, the app replaces it with the same markup (instead of hydrating), keeping keyboard focus where it was.
+- **Loading:** the CSS is one stylesheet, so the first paint waits on a single small request. Every screen but home is its own chunk, and the app fetches them all once it's idle.
 - **Lighthouse:** run on the production build, served compressed as Cloudflare serves it, with mobile defaults (about 1.6 Mbps, 150 ms round trip, 4× slower CPU). Targets: Performance ≥ 95, Accessibility 100, Best Practices ≥ 95, LCP ≤ 2.0 s, Total Blocking Time ≤ 150 ms, CLS ≤ 0.05.
 - **Repeat visits:** load from the service worker with no network.
 - **Long lists:** the expense list stays smooth at 2,000 expenses with Chrome's CPU slowed 4× as a stand-in for a low-end Android phone, using `content-visibility` and memoized rows. Virtualization is added only if profiling calls for it.
