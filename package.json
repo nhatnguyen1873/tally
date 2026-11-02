@@ -12,7 +12,7 @@
   "scripts": {
     "postinstall": "wrangler types",
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/prerender.mjs",
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "lint": "eslint .",
@@ -23,7 +23,7 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "size": "node scripts/check-bundle-size.mjs",
-    "lighthouse": "lhci autorun",
+    "lighthouse": "pnpm dlx @lhci/cli@0.15.1 autorun",
     "cf-typegen": "wrangler types",
     "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test:coverage && pnpm build && pnpm size",
     "deploy": "pnpm build && wrangler deploy"
