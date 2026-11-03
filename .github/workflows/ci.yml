@@ -33,6 +33,7 @@ jobs:
       - run: pnpm lint
       - run: pnpm format:check
       - run: pnpm test:coverage
+      - run: pnpm test:relay
       - run: pnpm build
       - run: pnpm size
 
@@ -117,4 +118,14 @@ jobs:
             sleep 5
           done
           echo "::error::$LIVE_URL did not serve this build within 150 s"
+          exit 1
+      - name: Smoke test the relay
+        # Without creating any data: see scripts/smoke-relay.mjs.
+        run: |
+          for attempt in 1 2 3 4 5 6; do
+            node scripts/smoke-relay.mjs "$LIVE_URL" && exit 0
+            echo "Relay not answering yet (attempt $attempt of 6); retrying in 10 s"
+            sleep 10
+          done
+          echo "::error::The relay at $LIVE_URL did not answer"
           exit 1
