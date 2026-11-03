@@ -46,6 +46,12 @@ textarea {
   font: inherit;
 }
 
+/* Browsers make a fieldset at least as wide as its content, which can push
+   a form past the screen when zoomed in. */
+fieldset {
+  min-inline-size: 0;
+}
+
 :focus-visible {
   outline: var(--focus-ring);
   outline-offset: 2px;

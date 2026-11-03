@@ -12,6 +12,9 @@
 
 .bar {
   display: flex;
+  /* When zoomed in a long way, the actions wrap below the title rather than
+     run off the screen. */
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
   max-width: var(--page-width);
@@ -49,7 +52,8 @@
 }
 
 .barTitle {
-  flex: 1;
+  /* Room for a few words before the actions wrap. */
+  flex: 1 1 5rem;
   min-width: 0;
   margin: 0;
   overflow: hidden;
@@ -67,6 +71,9 @@
 
 .main {
   display: grid;
+  /* One column that never grows past the screen: without minmax(0, …), the
+     widest content (a select's longest option) would set its width. */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-6);
   max-width: var(--page-width);
   margin: 0 auto;
@@ -84,6 +91,7 @@
 
 .section {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-3);
 }
 
@@ -112,5 +120,6 @@
 
 .stack {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-4);
 }

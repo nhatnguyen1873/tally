@@ -48,6 +48,7 @@ test.describe('inside an app’s built-in browser', () => {
     await page.goto('/')
     const hint = page.getByRole('status').getByText('can’t install it')
     await expect(hint).toBeVisible()
+    await expectNoAxeViolations(page, 'the in-app browser hint')
     await expect(page.getByRole('region', { name: 'Install Tally' })).toBeHidden()
     await page.getByRole('status').getByRole('button', { name: 'Dismiss' }).click()
     await expect(hint).toBeHidden()

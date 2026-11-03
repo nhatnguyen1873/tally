@@ -130,6 +130,7 @@ test.describe('joining', () => {
     await an.page.getByLabel('Invite link').fill('not a link')
     await an.page.getByRole('button', { name: 'Open group' }).click()
     await expect(an.page.getByText('That isn’t a whole Tally invite link.')).toBeVisible()
+    await expectNoAxeViolations(an.page, 'Join with a link, with an error')
     await an.page.getByLabel('Invite link').fill(`Join us: http://example.test${invite} !`)
     await an.page.getByRole('button', { name: 'Open group' }).click()
     await expect(an.page.getByRole('heading', { name: 'Who are you?' })).toBeVisible()

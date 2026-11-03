@@ -7,7 +7,7 @@
 /* Two by two on phones, one row when there's room. */
 .segments {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-1);
   padding: var(--space-1);
   border-radius: var(--radius-m);
@@ -16,7 +16,14 @@
 
 @media (min-width: 34rem) {
   .segments {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Very narrow, as when zoomed in: one under another, so no word is cut. */
+@media (max-width: 15rem) {
+  .segments {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

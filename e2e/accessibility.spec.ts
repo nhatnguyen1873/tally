@@ -101,4 +101,52 @@ test.describe('keyboard only', () => {
     await page.keyboard.press('Enter')
     await expect(page.getByRole('link', { name: /Internet/ })).toContainText('you lent $125.00')
   })
+
+  test('opens and closes the share sheet, returning focus', async ({ page }) => {
+    await createTrip(page)
+    const share = page.getByRole('button', { name: 'Invite people' })
+    await share.focus()
+    await page.keyboard.press('Enter')
+    const sheet = page.getByRole('dialog', { name: 'Invite people' })
+    await expect(sheet).toBeVisible()
+    // Focus moves into the sheet, and stays there.
+    await expect(sheet.getByRole('button', { name: 'Close' })).toBeFocused()
+    await page.keyboard.press('Escape')
+    await expect(sheet).toBeHidden()
+    await expect(share).toBeFocused()
+  })
+})
+
+test('nothing scrolls sideways at 200% zoom', async ({ page }) => {
+  // Zooming to 200% halves the width the page lays out in.
+  const { width, height } = page.viewportSize() ?? { width: 390, height: 844 }
+  const overflow = async (screen: string) => {
+    const wide = await page.evaluate<number>(
+      'document.documentElement.scrollWidth - document.documentElement.clientWidth',
+    )
+    expect(wide, `${screen} is wider than the screen`).toBeLessThanOrEqual(0)
+  }
+  await createTrip(page)
+  await addExpense(page, { amount: '1200000', title: 'Dinner', category: 'Food & drink' })
+  await page.setViewportSize({ width: Math.round(width / 2), height: Math.round(height / 2) })
+  await overflow('expenses')
+  await page.getByRole('link', { name: /Dinner/ }).click()
+  await expect(page.getByRole('heading', { name: 'Edit expense' })).toBeAttached()
+  await overflow('expense form')
+  await page.getByRole('link', { name: 'Back' }).click()
+  await tab(page, 'Balances').click()
+  await overflow('balances')
+  await tab(page, 'Activity').click()
+  await overflow('activity')
+  await page.getByRole('button', { name: 'Invite people' }).click()
+  await expect(page.getByRole('img', { name: 'QR code of the invite link' })).toBeVisible()
+  await overflow('share sheet')
+  await page.getByRole('button', { name: 'Close' }).click()
+  await page.getByRole('link', { name: 'Group settings' }).click()
+  await overflow('settings')
+  for (const path of ['/', '/new', '/about']) {
+    await page.goto(path)
+    await expect(page.getByRole('heading', { level: 1 })).toBeAttached()
+    await overflow(path)
+  }
 })
