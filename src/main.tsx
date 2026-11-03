@@ -14,9 +14,22 @@ import { loadCatalog, resolveLanguage } from './i18n/language.ts'
 
 const RELOADED = 'tally:reloaded-for-update'
 
+// Leaving the page: WebKit then rejects the imports still loading, which
+// isn't a missing chunk, and a reload would override where the page is going.
+// (pagehide, not beforeunload, which can keep a page out of the back-forward
+// cache.)
+let leaving = false
+window.addEventListener('pagehide', () => {
+  leaving = true
+})
+window.addEventListener('pageshow', () => {
+  leaving = false
+})
+
 // A deploy replaced the chunk this page asked for: reload once to get the new
 // version, rather than leaving a broken screen. Never loop.
 window.addEventListener('vite:preloadError', (event) => {
+  if (leaving) return
   try {
     if (sessionStorage.getItem(RELOADED)) return
     sessionStorage.setItem(RELOADED, '1')
