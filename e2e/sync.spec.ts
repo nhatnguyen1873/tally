@@ -2,7 +2,15 @@
 // browser context with its own storage, meeting only at the relay.
 import { expect, type Page, test } from '@playwright/test'
 
-import { addExpense, createTrip, expectNoAxeViolations, joinAs, phone, tab } from './helpers.ts'
+import {
+  addExpense,
+  createTrip,
+  expectNoAxeViolations,
+  joinAs,
+  phone,
+  readyOffline,
+  tab,
+} from './helpers.ts'
 
 const transfersOn = (page: Page) =>
   page.getByRole('listitem').filter({ has: page.getByRole('button', { name: 'Mark as paid' }) })
@@ -143,15 +151,7 @@ test.describe('joining', () => {
     const invite = await createTrip(minh)
     const an = await phone(browser, testInfo)
     await an.page.goto('/')
-    // Let the app fetch its screens first (once idle): loading the app itself
-    // offline comes with milestone 4's service worker.
-    await expect
-      .poll(() =>
-        an.page.evaluate<boolean>(
-          "performance.getEntriesByType('resource').some((entry) => entry.name.includes('/ExpensesRoute-'))",
-        ),
-      )
-      .toBe(true)
+    await readyOffline(an.page)
     await an.context.setOffline(true)
     await an.page.getByRole('button', { name: 'Join with a link' }).click()
     await an.page.getByLabel('Invite link').fill(`http://example.test${invite}`)
@@ -172,14 +172,7 @@ test('the share sheet still opens after going offline', async ({
   // A phone that has never opened the share sheet, so hasn't needed its code.
   const an = await phone(browser, testInfo)
   await joinAs(an.page, invite, 'An')
-  // Once idle, the app fetches the parts that load on demand.
-  await expect
-    .poll(() =>
-      an.page.evaluate<boolean>(
-        "performance.getEntriesByType('resource').some((entry) => entry.name.includes('/ShareSheet-'))",
-      ),
-    )
-    .toBe(true)
+  await readyOffline(an.page)
   await an.context.setOffline(true)
   await an.page.getByRole('button', { name: 'Invite people' }).click()
   await expect(an.page.getByRole('img', { name: 'QR code of the invite link' })).toBeVisible()

@@ -22,5 +22,6 @@
     "erasableSyntaxOnly": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src", "shared"]
+  "include": ["src", "shared"],
+  "exclude": ["src/service-worker.ts"]
 }

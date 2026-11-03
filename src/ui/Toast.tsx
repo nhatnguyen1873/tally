@@ -17,7 +17,14 @@ const ToastContext = createContext<(toast: Toast) => void>(() => undefined)
  * screen readers. Messages with an action (Undo) stay longer; what they undo
  * can also be restored from the Activity tab.
  */
-export function ToastProvider({ children }: { children: ReactNode }) {
+export function ToastProvider({
+  lasting,
+  children,
+}: {
+  /** Shown above the toasts until it goes away by itself, like "New version ready". */
+  lasting?: ReactNode
+  children: ReactNode
+}) {
   const { t } = useI18n()
   const [current, setCurrent] = useState<(Toast & { id: number }) | null>(null)
 
@@ -42,6 +49,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     >
       {children}
       <div className={styles.region} role="status">
+        {lasting}
         {current && (
           <div key={current.id} className={styles.toast}>
             <span className={styles.text}>{current.text}</span>
@@ -71,6 +79,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     </ToastContext>
   )
 }
+
+export const toastStyles = styles
 
 export function useToast(): (toast: Toast) => void {
   return use(ToastContext)

@@ -2,13 +2,14 @@
 // - renders the first screens into #root (src/prerender.tsx), so one paints
 //   before the JavaScript has downloaded and run;
 // - tells the inline boot script each language's catalog file, to preload;
-// - lists the files of the parts of screens that load on demand, for the app
-//   to fetch once idle (main.tsx), without adding imports to the bundle;
 // - allows the boot script in the CSP by its hash, so no other inline script
-//   can run.
+//   can run;
+// - builds the service worker (src/service-worker.ts) with the list of files
+//   to keep offline, taken now that the HTML is final.
 // Runs after `vite build`.
 import { createHash } from 'node:crypto'
-import { readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { join, relative, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 import { build } from 'vite'
@@ -18,16 +19,6 @@ const HEADERS = 'dist/client/_headers'
 const MANIFEST = 'dist/client/.vite/manifest.json'
 const ROOT = '<div id="root"></div>'
 const CATALOGS = 'var catalogs = {}'
-/** Parts that load when first shown: preloaded so they work if the phone goes offline first. */
-const PARTS = [
-  'src/features/join/JoinScreen.tsx',
-  'src/features/join/WhoAreYou.tsx',
-  'src/features/share/ShareSheet.tsx',
-  '/uqr/',
-  'src/features/home/JoinDialog.tsx',
-  'src/features/activity/History.tsx',
-  'src/domain/csv.ts',
-]
 
 await build({ configFile: 'vite.prerender.config.ts' })
 const { render } = await import(pathToFileURL('dist/prerender/prerender.js').href)
@@ -46,27 +37,6 @@ const catalogs = Object.fromEntries(
 )
 if (!html.includes(CATALOGS)) throw new Error(`${CATALOGS} not found in ${PAGE}`)
 html = html.replace(CATALOGS, () => `var catalogs = ${JSON.stringify(catalogs)}`)
-
-/** A chunk's file and every file it imports. */
-function files(key, found = new Set()) {
-  const chunk = manifest[key]
-  if (!chunk || found.has(chunk.file)) return found
-  found.add(chunk.file)
-  for (const imported of chunk.imports ?? []) files(imported, found)
-  return found
-}
-// The page already loads the entry and what it imports.
-const entryKey = Object.keys(manifest).find((name) => manifest[name].isEntry)
-const loaded = files(entryKey)
-const partFiles = new Set()
-for (const part of PARTS) {
-  const key = Object.keys(manifest).find((name) => name === part || name.includes(part))
-  if (!key) throw new Error(`No chunk for ${part} in ${MANIFEST}`)
-  for (const file of files(key)) if (!loaded.has(file)) partFiles.add(`/${file}`)
-}
-const preload = `<meta name="tally-preload" content="${[...partFiles].join(' ')}" />`
-if (!html.includes('</head>')) throw new Error(`</head> not found in ${PAGE}`)
-html = html.replace('</head>', () => `${preload}\n  </head>`)
 writeFileSync(PAGE, html)
 
 const inline = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1] ?? '')
@@ -82,3 +52,45 @@ renameSync(MANIFEST, 'dist/client-manifest.json')
 rmSync('dist/client/.vite', { recursive: true, force: true })
 rmSync('dist/prerender', { recursive: true, force: true })
 console.log(`Prerendered ${PAGE} and allowed its boot script (sha256-${hash})`)
+
+// --- The service worker ----------------------------------------------------------
+
+/**
+ * Files Cloudflare reads rather than serves (including those .assetsignore
+ * names), or that mustn't be kept offline.
+ */
+const ignored = readFileSync('dist/client/.assetsignore', 'utf8').split('\n').filter(Boolean)
+const NOT_CACHED = new Set(['.assetsignore', ...ignored, '_headers', 'robots.txt', 'sw.js'])
+const precache = []
+const version = createHash('sha256')
+for (const entry of readdirSync('dist/client', { recursive: true, withFileTypes: true })) {
+  if (!entry.isFile()) continue
+  const file = join(entry.parentPath, entry.name)
+  const path = relative('dist/client', file).split(sep).join('/')
+  if (NOT_CACHED.has(path)) continue
+  // The page is served at /, as every address serves it.
+  const url = path === 'index.html' ? '/' : `/${path}`
+  precache.push(url)
+  version.update(url).update(readFileSync(file))
+}
+precache.sort()
+const stamp = version.digest('base64url').slice(0, 16)
+await build({
+  configFile: false,
+  logLevel: 'warn',
+  publicDir: false,
+  define: { PRECACHE: JSON.stringify(precache), VERSION: JSON.stringify(stamp) },
+  build: {
+    outDir: 'dist/sw',
+    emptyOutDir: true,
+    lib: {
+      entry: 'src/service-worker.ts',
+      formats: ['iife'],
+      name: 'tally',
+      fileName: () => 'sw.js',
+    },
+  },
+})
+copyFileSync('dist/sw/sw.js', 'dist/client/sw.js')
+rmSync('dist/sw', { recursive: true, force: true })
+console.log(`Built the service worker: version ${stamp}, ${precache.length} files kept offline`)

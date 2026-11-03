@@ -141,6 +141,9 @@ export const vi: Catalog = {
   'share.shareText': 'Tham gia {group} trên Tally',
   'share.warning': 'Bất kỳ ai có link này đều xem và sửa được nhóm.',
 
+  'update.ready': 'Đã có phiên bản mới',
+  'update.reload': 'Tải lại',
+
   'expenses.add': 'Thêm khoản chi',
   'expenses.empty': 'Chưa có khoản chi nào. Hãy thêm khoản đầu tiên, như bữa tối hay tiền taxi.',
   'expenses.today': 'Hôm nay',

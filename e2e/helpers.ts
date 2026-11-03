@@ -75,3 +75,16 @@ export async function actAs(page: Page, name: string) {
 export function tab(page: Page, name: 'Expenses' | 'Balances' | 'Activity') {
   return page.getByRole('navigation', { name: 'Group sections' }).getByRole('link', { name })
 }
+
+/**
+ * Waits until the service worker controls the page: it takes over only once
+ * it has every file cached, so from then on the app works with no network.
+ */
+export async function readyOffline(page: Page) {
+  // Polled with evaluate: waitForFunction needs eval, which the CSP rightly forbids.
+  await expect
+    .poll(() => page.evaluate<boolean>('navigator.serviceWorker.controller !== null'), {
+      timeout: 15_000,
+    })
+    .toBe(true)
+}

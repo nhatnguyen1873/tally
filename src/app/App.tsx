@@ -7,6 +7,7 @@ import { ToastProvider } from '../ui/Toast.tsx'
 import { applyTheme, usePrefs } from './prefs.ts'
 import { Routes } from './Routes.tsx'
 import { Shell } from './Shell.tsx'
+import { UpdatePrompt } from './UpdatePrompt.tsx'
 
 function Theme() {
   const { theme } = usePrefs()
@@ -20,7 +21,7 @@ export function App({ initial }: { initial: { language: Language; catalog: Catal
   return (
     <I18nProvider initial={initial}>
       <Theme />
-      <ToastProvider>
+      <ToastProvider lasting={<UpdatePrompt />}>
         <Suspense fallback={<Shell />}>
           <Routes />
         </Suspense>

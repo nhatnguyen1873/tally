@@ -146,6 +146,9 @@ export const en = {
   'share.shareText': 'Join {group} on Tally',
   'share.warning': 'Anyone with this link can see and edit the group.',
 
+  'update.ready': 'New version ready',
+  'update.reload': 'Reload',
+
   'expenses.add': 'Add expense',
   'expenses.empty': 'No expenses yet. Add the first one, like dinner or a taxi.',
   'expenses.today': 'Today',
