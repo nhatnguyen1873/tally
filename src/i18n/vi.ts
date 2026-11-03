@@ -40,6 +40,7 @@ export const vi: Catalog = {
   'home.joinField': 'Link mời',
   'home.joinHint': 'Dán link mời mà người khác đã gửi cho bạn.',
   'home.joinButton': 'Mở nhóm',
+  'home.about': 'Giới thiệu Tally: quyền riêng tư và cách hoạt động',
 
   'summary.owed': 'Bạn được nhận lại {amount}',
   'summary.owe': 'Bạn còn nợ {amount}',

@@ -31,6 +31,12 @@ async function checkEveryScreen(page: Page) {
   await check('home, with a group')
   await page.goto('/new')
   await check('new group')
+  await page.goto('/about')
+  await expect(page.getByRole('heading', { name: 'About Tally' })).toBeVisible()
+  await check('about')
+  await page.goto('/nowhere')
+  await expect(page.getByRole('heading', { name: 'Page not found' })).toBeVisible()
+  await check('not found')
 }
 
 for (const colorScheme of ['light', 'dark'] as const) {
@@ -48,6 +54,9 @@ test('every screen passes axe in Vietnamese', async ({ page }) => {
   await expectNoAxeViolations(page, 'home in Vietnamese')
   await page.getByRole('link', { name: 'Tạo nhóm' }).click()
   await expectNoAxeViolations(page, 'new group in Vietnamese')
+  await page.goto('/about')
+  await expect(page.getByRole('heading', { name: 'Giới thiệu Tally' })).toBeVisible()
+  await expectNoAxeViolations(page, 'about in Vietnamese')
 })
 
 test('moves focus to each new screen’s heading', async ({ page }) => {

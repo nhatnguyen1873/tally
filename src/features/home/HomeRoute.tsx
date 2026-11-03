@@ -104,6 +104,9 @@ export function HomeRoute() {
           </Section>
           <InstallHint />
           <Preferences />
+          <p className={styles.about}>
+            <Link href="/about">{t('home.about')}</Link>
+          </p>
         </>
       )}
     </Page>

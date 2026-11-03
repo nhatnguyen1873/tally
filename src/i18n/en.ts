@@ -42,6 +42,7 @@ export const en = {
   'home.joinField': 'Invite link',
   'home.joinHint': 'Paste the invite link someone sent you.',
   'home.joinButton': 'Open group',
+  'home.about': 'About Tally: privacy and how it works',
 
   'summary.owed': 'You’re owed {amount}',
   'summary.owe': 'You owe {amount}',

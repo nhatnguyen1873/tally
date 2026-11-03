@@ -102,6 +102,21 @@ test('sends the security headers, allowing only the boot script inline', async (
   expect(headers['x-content-type-options']).toBe('nosniff')
 })
 
+test('explains privacy on the About page, linked from Home', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('link', { name: 'About Tally: privacy and how it works' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'About Tally' })).toBeFocused()
+  await expect(page.getByText('It can’t see names, amounts, titles')).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Source code on GitHub' })).toHaveAttribute(
+    'href',
+    'https://github.com/nhatnguyen1873/tally',
+  )
+  await expect(page.getByRole('link', { name: 'Report a problem' })).toHaveAttribute(
+    'href',
+    'https://github.com/nhatnguyen1873/tally/issues/new',
+  )
+})
+
 test('can be installed: a manifest whose icons all load', async ({ page, request }) => {
   await page.goto('/')
   expect(await page.locator('link[rel="manifest"]').getAttribute('href')).toBe(

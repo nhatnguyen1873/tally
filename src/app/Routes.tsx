@@ -13,6 +13,7 @@ const screens = {
   settings: () => import('../features/settings/SettingsRoute.tsx'),
   expense: () => import('../features/expense/ExpenseFormRoute.tsx'),
   payment: () => import('../features/payment/PaymentFormRoute.tsx'),
+  about: () => import('../features/about/AboutRoute.tsx'),
   notFound: () => import('./NotFoundRoute.tsx'),
 }
 
@@ -23,6 +24,7 @@ const ActivityRoute = lazy(screens.activity)
 const SettingsRoute = lazy(screens.settings)
 const ExpenseFormRoute = lazy(screens.expense)
 const PaymentFormRoute = lazy(screens.payment)
+const AboutRoute = lazy(screens.about)
 const NotFoundRoute = lazy(screens.notFound)
 
 /** Fetches every screen once the app is idle, so moving between them doesn't wait. */
@@ -40,6 +42,7 @@ export function Routes() {
     <Switch location={shown}>
       <Route path="/" component={HomeRoute} />
       <Route path="/new" component={NewGroupRoute} />
+      <Route path="/about" component={AboutRoute} />
       <Route path="/g/:groupId" component={ExpensesRoute} />
       <Route path="/g/:groupId/balances" component={BalancesRoute} />
       <Route path="/g/:groupId/activity" component={ActivityRoute} />

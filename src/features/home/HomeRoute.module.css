@@ -41,3 +41,10 @@
   margin-left: 0.25em;
   vertical-align: -0.2em;
 }
+
+.about a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-target);
+  font-weight: 600;
+}
