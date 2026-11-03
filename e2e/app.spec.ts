@@ -102,6 +102,30 @@ test('sends the security headers, allowing only the boot script inline', async (
   expect(headers['x-content-type-options']).toBe('nosniff')
 })
 
+test('can be installed: a manifest whose icons all load', async ({ page, request }) => {
+  await page.goto('/')
+  expect(await page.locator('link[rel="manifest"]').getAttribute('href')).toBe(
+    '/manifest.webmanifest',
+  )
+  const response = await request.get('/manifest.webmanifest')
+  expect(response.headers()['content-type']).toContain('application/manifest+json')
+  const manifest = (await response.json()) as {
+    display: string
+    start_url: string
+    icons: { src: string; sizes: string; purpose: string }[]
+  }
+  expect(manifest).toMatchObject({ display: 'standalone', start_url: '/' })
+  expect(manifest.icons.map((icon) => `${icon.sizes} ${icon.purpose}`)).toEqual(
+    expect.arrayContaining(['192x192 any', '512x512 any', '192x192 maskable', '512x512 maskable']),
+  )
+  const apple = await page.locator('link[rel="apple-touch-icon"]').getAttribute('href')
+  for (const src of [...manifest.icons.map((icon) => icon.src), apple ?? '']) {
+    const icon = await request.get(src)
+    expect(icon.status(), src).toBe(200)
+    expect(icon.headers()['content-type'], src).toMatch(/^image\//)
+  }
+})
+
 test('serves group links through the app, marked noindex', async ({ request }) => {
   const response = await request.get('/g/group-dalat-trip-00000')
   expect(response.status()).toBe(200)
