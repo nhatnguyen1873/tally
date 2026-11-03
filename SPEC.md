@@ -51,7 +51,7 @@ Tally is a shared-expense tracker for small groups: a trip, a shared flat, a gro
 10. **Deleting data:** v1 has no "delete for everyone", only "Remove from this device".
 11. **Relay limits:** 4 KB per operation, 100 operations per message, 20,000 operations and 50 open connections per group, and 120 operations per minute per connection.
 12. **Browsers:** the current and previous major versions of Chrome, Edge, Firefox and Samsung Internet, plus Safari and iOS 16.4 or later.
-13. **Libraries:** wouter (routing), idb (IndexedDB), Lucide's icon data (drawn by a small component, a few dozen bytes per icon), uqr (QR codes), vite-plugin-pwa (service worker), @cloudflare/vite-plugin (runs the Worker during development), React Compiler, and a small typed i18n layer instead of a large library.
+13. **Libraries:** wouter (routing), idb (IndexedDB), Lucide's icon data (drawn by a small component, a few dozen bytes per icon), uqr (QR codes), a small hand-written service worker (vite-plugin-pwa lists and stamps the files during `vite build`, before the prerender step rewrites `index.html`), @cloudflare/vite-plugin (runs the Worker during development), React Compiler, and a small typed i18n layer instead of a large library.
 14. **Vietnamese copy:** I write it, and you review it at milestone 2.
 15. **Phone testing:** check-ins happen on the live address. Service workers and WebCrypto need HTTPS, so trying unpushed work on a phone goes through a free Cloudflare quick tunnel (it needs `cloudflared`, but no account).
 16. **Commit identity:** Nhat Nguyen <nhatnguyen1873@gmail.com>, matching your first commit and set for this repo only. Your global git config, which has your work email, stays as it is.
@@ -212,10 +212,11 @@ The protocol runs over a WebSocket at `/api/g/:groupId/ws`.
 
 ## 7. Offline and PWA
 
-- **Service worker:** precaches the app shell and the code for every route, including the chunks that load on demand. Repeat visits work with no network, and so do CSV export and QR codes.
-- **Manifest:** includes icons (with maskable versions) and theme colors for light and dark.
-- **Install:** on Android, an "Install" button triggers the native prompt. On iOS, the app shows Share → Add to Home Screen instructions.
-- **Updates:** a new service worker waits until the user taps "New version ready · Reload".
+- **Service worker:** precaches the app shell and the code for every route, including the chunks that load on demand. Repeat visits work with no network, and so do CSV export and QR codes. The build lists the files after the HTML is final and stamps the version from their hashes. Page loads get the cached page; other files come from the cache, then the network; the relay is never touched.
+- **Manifest:** includes icons (SVG, 192 and 512 px PNGs, and maskable versions) and an Apple touch icon. The theme-color tags give the light and dark bar colors.
+- **Install:** on Android, an "Install" button on Home triggers the native prompt. On iOS, Home shows Share → Add to Home Screen instructions. Both go once installed or dismissed.
+- **Updates:** a new service worker waits until the user taps "New version ready · Reload", which stays until tapped; every open tab then reloads into the new version. The app looks for a new version whenever it comes back to the foreground.
+- **In-app browsers:** the "Open in your browser" hint sits with the toasts, so it never moves the page, and goes once dismissed for that visit.
 - **iOS storage:** home-screen apps get storage separate from Safari, so the installed app offers "Join with a link". Safari may also clear data for sites not opened in 7 days. Installing avoids that, and the group re-downloads from the relay as long as you still have the link.
 
 ## 8. Languages
@@ -230,19 +231,19 @@ The protocol runs over a WebSocket at `/api/g/:groupId/ws`.
 - **Keyboard:** everything works by keyboard, with visible focus. Dialogs use the native `<dialog>`, trap focus, and return it on close.
 - **Sizing and contrast:** touch targets of at least 44×44 px; contrast of 4.5:1 for text and 3:1 for controls, in both themes.
 - **Not color alone:** balances use words and signs. The split editor announces "left to assign" politely.
-- **User settings:** respects reduced motion, color scheme and the OS text size, and stays usable at 200% zoom.
-- **Checks:** axe runs on every screen in both themes and languages, and CI fails on any violation. Every flow is also tested by keyboard alone. Screen readers need real phones, so before v1 I give you a short VoiceOver and TalkBack checklist to run.
+- **User settings:** respects reduced motion, color scheme and the OS text size, and stays usable at 200% zoom (a test checks that no screen scrolls sideways at half the width).
+- **Checks:** axe runs on every screen in both themes and languages, and CI fails on any violation. Every flow is also tested by keyboard alone. Screen readers need real phones, so before v1 you run the short VoiceOver and TalkBack checklist in [docs/screen-reader-checklist.md](docs/screen-reader-checklist.md).
 
 ## 10. Performance budgets
 
 - **JavaScript:** at most 110 KB gzipped on the first load of any screen: the app, one language and that screen's code (React 19 is 67.5 KB of that, leaving about 40 KB for the app).
 - **CSS:** at most 15 KB gzipped.
-- **On demand:** the QR code, CSV export, About page, inactive language, join screens, share sheet and Join with a link load only when needed. Once the app is idle it fetches them all (the build lists their files), so they work even if the phone goes offline first.
+- **On demand:** the QR code, CSV export, About page, inactive language, join screens, share sheet and Join with a link load only when needed. The service worker keeps them all, so they work even if the phone goes offline before they're first used. Group screens load the sync engine just after their first render.
 - **First paint:** the build prerenders the home screen, in English and in Vietnamese, and a loading frame for every other address into the HTML. The inline script shows the one that fits, so text appears before any JavaScript runs. Once the browser has shown it, the app replaces it with the same markup (instead of hydrating), keeping keyboard focus where it was.
 - **Loading:** the CSS is one stylesheet, so the first paint waits on a single small request. Every screen but home is its own chunk, and the app fetches them all once it's idle.
 - **Lighthouse:** run on the production build, served compressed as Cloudflare serves it, with mobile defaults (about 1.6 Mbps, 150 ms round trip, 4× slower CPU). Targets: Performance ≥ 95, Accessibility 100, Best Practices ≥ 95, LCP ≤ 2.0 s, Total Blocking Time ≤ 150 ms, CLS ≤ 0.05.
 - **Repeat visits:** load from the service worker with no network.
-- **Long lists:** the expense list stays smooth at 2,000 expenses with Chrome's CPU slowed 4× as a stand-in for a low-end Android phone, using `content-visibility` and memoized rows. Virtualization is added only if profiling calls for it.
+- **Long lists:** the expense list stays smooth at 2,000 expenses with Chrome's CPU slowed 4× as a stand-in for a low-end Android phone, with rows memoized by React Compiler. Virtualization is added only if profiling calls for it. `pnpm perf` measures it (on demand, since shared CI machines vary too much): about 1.4 s to open, 60 fps scrolling (95th percentile frame 17 ms) and about 140 ms for the slowest key press in search. `content-visibility` on each day made opening slower and helped nothing, so it isn't used.
 - **Enforcement:** CI checks every budget with a bundle-size script (it measures exactly what a first visit downloads) and Lighthouse CI.
 
 ## 11. Design
@@ -269,6 +270,7 @@ tally/
 ├─ worker/        Worker entry and the GroupLog Durable Object
 ├─ shared/        protocol types used by both the app and the relay
 ├─ e2e/           Playwright tests
+├─ docs/          the screen reader checklist
 ├─ public/        icons and manifest assets
 └─ .github/workflows/ci.yml
 ```

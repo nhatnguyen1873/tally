@@ -4,7 +4,7 @@ Split shared expenses with friends: no sign-up, works offline, and only your gro
 
 [![CI](https://github.com/nhatnguyen1873/tally/actions/workflows/ci.yml/badge.svg)](https://github.com/nhatnguyen1873/tally/actions/workflows/ci.yml)
 
-**Live preview:** [tally.nhatt.workers.dev](https://tally.nhatt.workers.dev) · **Status:** milestone 3 of 4 ([plan](SPEC.md#14-milestones))
+**Live preview:** [tally.nhatt.workers.dev](https://tally.nhatt.workers.dev) · **Status:** milestone 4 of 4 ([plan](SPEC.md#14-milestones))
 
 One person creates a group and shares a link; everyone else taps it and is in. Expenses save instantly on the phone, even offline, and merge across everyone's phones when they reconnect. Settle up shows the fewest payments that clear every debt. The full v1 plan is in [SPEC.md](SPEC.md).
 
@@ -14,6 +14,7 @@ One person creates a group and shares a link; everyone else taps it and is in. E
 - **Exact money.** Amounts are integers in the currency's smallest unit. [Splits](src/domain/split.ts) use the largest-remainder method, so every split adds up exactly and the extra đồng rotates between people.
 - **Fewest transfers.** [Settle-up](src/domain/settle.ts) finds the most groups of people who can settle among themselves, with an exact search for up to 18 people, and tests check it against a brute-force minimum.
 - **End-to-end encryption.** The key lives in the invite link's `#fragment`, which browsers never send to servers. [HKDF and AES-GCM](src/sync/crypto.ts) encrypt every operation on the phone, and [one Durable Object per group](worker/group-log.ts) relays only ciphertext.
+- **Offline and installable.** A [service worker](src/service-worker.ts) keeps the whole app, so after the first visit it opens and works with no network, and it installs from Safari or Chrome like an app.
 - **Fast on slow phones.** The home screen is prerendered into the HTML in both languages, so it paints before any JavaScript arrives, and CI holds every screen's first load to the [budgets](SPEC.md#10-performance-budgets) and Lighthouse thresholds.
 
 ## Develop
@@ -36,6 +37,7 @@ pnpm dev
 | `pnpm test:relay` | Relay tests, in the Workers runtime                                       |
 | `pnpm test:e2e`   | End-to-end and accessibility tests on the production build                |
 | `pnpm lighthouse` | Lighthouse against the production build                                  |
+| `pnpm perf`       | The 2,000-expense list audit, with the CPU slowed 4×                      |
 | `pnpm preview`    | Serves the production build in the Workers runtime                        |
 
 Before the first end-to-end run, install the test browsers with `pnpm exec playwright install chromium webkit`, and run `pnpm build`.
@@ -57,7 +59,8 @@ Every push to `main` deploys to Cloudflare once all checks pass ([workflow](.git
 | `worker/`       | The Cloudflare Worker and the sync relay, with its tests                 |
 | `shared/`       | The sync protocol, shared by the app and the relay                       |
 | `e2e/`          | Playwright tests                                                         |
-| `scripts/`      | Prerendering, bundle-size check and the Lighthouse server                |
+| `scripts/`      | Prerendering and the service worker build, size check, icons, servers    |
+| `docs/`         | The screen reader checklist                                              |
 
 ## License
 
