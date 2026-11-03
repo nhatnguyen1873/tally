@@ -10,7 +10,6 @@ import { Preferences } from '../../app/Preferences.tsx'
 import { todayIso } from '../../i18n/format.ts'
 import { useI18n } from '../../i18n/I18nProvider.tsx'
 import { removeGroup } from '../../sync/groups.ts'
-import { stopSync } from '../../sync/manager.ts'
 import { Avatar } from '../../ui/Avatar.tsx'
 import { Button, IconButton } from '../../ui/Button.tsx'
 import { ConfirmDialog } from '../../ui/ConfirmDialog.tsx'
@@ -19,7 +18,14 @@ import { Download, Share2, Trash, Undo2, UserPlus } from '../../ui/icons.ts'
 import { Page, pageStyles, Section } from '../../ui/Page.tsx'
 import { useToast } from '../../ui/Toast.tsx'
 import { currencyOptions } from '../group/currencies.ts'
-import { type Group, GroupGate, groupStyles, ShareSheet, useSyncStatus } from '../group/group.tsx'
+import {
+  type Group,
+  GroupGate,
+  groupStyles,
+  ShareSheet,
+  stopGroupSync,
+  useSyncStatus,
+} from '../group/group.tsx'
 import { cleanText } from '../group/people.ts'
 import { downloadText, fileNameFor } from './download.ts'
 import styles from './SettingsRoute.module.css'
@@ -191,10 +197,11 @@ function SettingsScreen({ group }: { group: Group }) {
         }
         confirmLabel={t('settings.removeButton')}
         onConfirm={() => {
-          stopSync(group.id)
-          void removeGroup(group.id).then(() => {
-            navigate('/', { replace: true })
-          })
+          void stopGroupSync(group.id)
+            .then(() => removeGroup(group.id))
+            .then(() => {
+              navigate('/', { replace: true })
+            })
         }}
         onClose={() => {
           setConfirming(false)

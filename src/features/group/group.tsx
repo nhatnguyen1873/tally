@@ -3,6 +3,7 @@ import {
   type ReactNode,
   Suspense,
   use,
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -15,7 +16,7 @@ import { useI18n } from '../../i18n/I18nProvider.tsx'
 import type { MessageKey } from '../../i18n/en.ts'
 import { groupStore, type GroupStore, type GroupView, onGroupChange } from '../../sync/groups.ts'
 import { secretFromHash } from '../../sync/links.ts'
-import { holdSync, type SyncStatus, syncEngine } from '../../sync/manager.ts'
+import type { SyncStatus } from '../../sync/manager.ts'
 import { ButtonLink, IconButton, IconLink } from '../../ui/Button.tsx'
 import { Icon } from '../../ui/Icon.tsx'
 import {
@@ -35,6 +36,27 @@ import { Page } from '../../ui/Page.tsx'
 import { useToast } from '../../ui/Toast.tsx'
 import styles from './group.module.css'
 import { makePeople, type People } from './people.ts'
+
+type Manager = typeof import('../../sync/manager.ts')
+let manager: Manager | null = null
+let loadingManager: Promise<Manager> | null = null
+
+/**
+ * The sync engine (and its encryption) loads just after a group screen's
+ * first render: the screen shows from this device's storage without it.
+ */
+function loadManager(): Promise<Manager> {
+  loadingManager ??= import('../../sync/manager.ts').then((loaded) => {
+    manager = loaded
+    return loaded
+  })
+  return loadingManager
+}
+
+/** Stops syncing a group, before removing it from this device. */
+export async function stopGroupSync(groupId: string): Promise<void> {
+  ;(await loadManager()).stopSync(groupId)
+}
 
 // Joining and sharing load on demand: most visits need neither.
 const JoinScreen = lazy(() =>
@@ -81,7 +103,18 @@ export function GroupGate({ children }: { children: (group: Group) => ReactNode 
   )
   const people = useMemo(() => view && makePeople(view.state, view.record.me, t), [view, t])
 
-  useEffect(() => (store ? holdSync(groupId) : undefined), [store, groupId])
+  useEffect(() => {
+    if (!store) return
+    let live = true
+    let release: (() => void) | undefined
+    void loadManager().then(({ holdSync }) => {
+      if (live) release = holdSync(groupId)
+    })
+    return () => {
+      live = false
+      release?.()
+    }
+  }, [store, groupId])
 
   // Once the group is here, the key needn't stay in the address bar (or in
   // history); Share always gives the whole link.
@@ -240,9 +273,30 @@ function clearShareRequest() {
   if (wantsShare()) history.replaceState({ ...(history.state as object), share: false }, '')
 }
 
+/** Until the engine has loaded, a group reads as syncing. */
+const CONNECTING: SyncStatus = { state: 'syncing', pending: 0, clockOffset: null }
+
 export function useSyncStatus(groupId: string): SyncStatus {
-  const engine = syncEngine(groupId)
-  return useSyncExternalStore(engine.subscribe, engine.getStatus)
+  const subscribe = useCallback(
+    (notify: () => void) => {
+      let live = true
+      let stop: (() => void) | undefined
+      void loadManager().then(({ syncEngine }) => {
+        if (!live) return
+        stop = syncEngine(groupId).subscribe(notify)
+        notify()
+      })
+      return () => {
+        live = false
+        stop?.()
+      }
+    },
+    [groupId],
+  )
+  return useSyncExternalStore(
+    subscribe,
+    () => manager?.syncEngine(groupId).getStatus() ?? CONNECTING,
+  )
 }
 
 const SYNC_LOOK = {
