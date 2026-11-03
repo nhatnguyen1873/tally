@@ -19,6 +19,7 @@ export function Page({
   actions,
   below,
   footer,
+  className,
   children,
 }: {
   /** The browser tab's title. */
@@ -35,6 +36,8 @@ export function Page({
   below?: ReactNode
   /** Fixed to the bottom of the screen, like a group's tabs. */
   footer?: ReactNode
+  /** On the whole screen, for styles that depend on what the footer holds. */
+  className?: string
   children: ReactNode
 }) {
   const { t } = useI18n()
@@ -50,7 +53,7 @@ export function Page({
   }, [])
 
   return (
-    <div className={styles.page}>
+    <div className={[styles.page, className].filter(Boolean).join(' ')}>
       <header className={styles.header}>
         <div className={styles.bar}>
           {back ? (

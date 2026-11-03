@@ -70,7 +70,8 @@
   gap: var(--space-6);
   max-width: var(--page-width);
   margin: 0 auto;
-  padding: var(--space-5) var(--space-4) var(--space-16);
+  /* Screens with bars fixed to the bottom set --page-end to clear them. */
+  padding: var(--space-5) var(--space-4) var(--page-end, var(--space-16));
   padding-left: max(var(--space-4), env(safe-area-inset-left));
   padding-right: max(var(--space-4), env(safe-area-inset-right));
 }

@@ -107,6 +107,7 @@ export function GroupTabsPage({
       barTitle={group.info.name}
       back={{ href: '/', label: t('app.allGroups') }}
       actions={<IconLink href={`${base}/settings`} icon={Settings} label={t('group.settings')} />}
+      className={floating ? `${styles.tabsPage} ${styles.withFloating}` : styles.tabsPage}
       footer={
         <>
           {floating}
