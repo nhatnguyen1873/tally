@@ -25,6 +25,7 @@
     "vite.prerender.config.ts",
     "vite.shared.ts",
     "vitest.config.ts",
+    "vitest.relay.config.ts",
     "playwright.config.ts",
     "e2e"
   ]

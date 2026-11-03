@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.worker.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "../../node_modules/.tmp/tsconfig.relay-tests.tsbuildinfo",
+    "types": ["../../worker-configuration.d.ts", "@cloudflare/vitest-plugin/types"]
+  },
+  "include": ["./**/*.ts", "../**/*.ts", "../../shared/**/*.ts"],
+  "exclude": ["../../shared/**/*.test.ts"]
+}

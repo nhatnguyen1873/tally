@@ -21,5 +21,6 @@
     "erasableSyntaxOnly": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["worker"]
+  "include": ["worker", "shared"],
+  "exclude": ["**/*.test.ts", "worker/test"]
 }
