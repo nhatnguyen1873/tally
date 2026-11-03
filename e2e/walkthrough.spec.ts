@@ -1,5 +1,5 @@
-// The walkthrough from SPEC.md section 3, on one device: switching who the
-// device acts as stands in for each friend's phone until sync arrives.
+// The walkthrough from SPEC.md section 3 on one device, switching who the
+// device acts as, plus the CSV export. e2e/sync.spec.ts runs it across phones.
 import { readFile } from 'node:fs/promises'
 
 import { expect, test } from '@playwright/test'

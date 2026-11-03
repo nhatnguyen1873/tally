@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright'
-import { expect, type Page } from '@playwright/test'
+import { type Browser, expect, type Page, type TestInfo } from '@playwright/test'
 
 const WCAG_22_AA = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']
 
@@ -12,8 +12,11 @@ export async function expectNoAxeViolations(page: Page, screen: string) {
   expect(summary, `axe on ${screen}`).toEqual([])
 }
 
-/** Creates the walkthrough's group as Minh, and waits for its screen. */
-export async function createTrip(page: Page) {
+/**
+ * Creates the walkthrough's group as Minh, and waits for its screen. Returns
+ * the invite link's path (with its #secret), from the share sheet.
+ */
+export async function createTrip(page: Page): Promise<string> {
   await page.goto('/')
   await page.getByRole('link', { name: 'New group' }).click()
   await page.getByLabel('Group name').fill('Đà Lạt trip')
@@ -28,9 +31,25 @@ export async function createTrip(page: Page) {
   // The invite opens first, ready to send.
   const invite = page.getByRole('dialog', { name: 'Invite people' })
   await expect(invite).toBeVisible()
+  const link = await invite.getByLabel('Invite link', { exact: true }).inputValue()
   await invite.getByRole('button', { name: 'Close' }).click()
   await expect(invite).toBeHidden()
   await expect(page.getByText('You’re settled up')).toBeVisible()
+  return new URL(link).pathname + new URL(link).hash
+}
+
+/** Another phone: its own browser context, so its own storage. */
+export async function phone(browser: Browser, testInfo: TestInfo, options = {}) {
+  const context = await browser.newContext({ ...testInfo.project.use, ...options })
+  return { context, page: await context.newPage() }
+}
+
+/** Opens an invite link on a phone and picks who it is. */
+export async function joinAs(page: Page, invite: string, name: string) {
+  await page.goto(invite)
+  await expect(page.getByRole('heading', { name: 'Who are you?' })).toBeVisible()
+  await page.getByRole('button', { name, exact: true }).click()
+  await expect(page.getByRole('link', { name: 'Add expense' })).toBeVisible()
 }
 
 export async function addExpense(

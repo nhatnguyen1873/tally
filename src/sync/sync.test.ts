@@ -265,6 +265,14 @@ describe('live sync', () => {
     expect(await titles(an, id)).toEqual(['Dinner', 'Taxi'])
   })
 
+  it('reconnects by itself when the connection drops while still online', async () => {
+    const { minh, an, id, anSync } = await tripOnTwoPhones()
+    an.network.dropConnections()
+    await addExpense(minh, id, 'Dinner')
+    await until(async () => (await titles(an, id)).includes('Dinner'), 'Dinner after reconnecting')
+    await until(() => anSync.getStatus().state === 'synced', 'synced again')
+  })
+
   it('catches up on what it missed while disconnected, from its cursor', async () => {
     const { relay, minh, an, id, anSync } = await tripOnTwoPhones()
     anSync.stop()
@@ -636,6 +644,13 @@ describe('the browser network', () => {
       stop()
       windowEvents.dispatchEvent(new Event('online'))
       expect(wakes).toBe(2)
+
+      let offline = 0
+      const stopOffline = browserNetwork.onOffline(() => offline++)
+      windowEvents.dispatchEvent(new Event('offline'))
+      stopOffline()
+      windowEvents.dispatchEvent(new Event('offline'))
+      expect(offline).toBe(1)
     } finally {
       vi.unstubAllGlobals()
     }

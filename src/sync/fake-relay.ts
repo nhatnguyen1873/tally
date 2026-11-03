@@ -84,9 +84,10 @@ export class FakeRelay {
   pushes = 0
 
   /** A phone's view of the network. */
-  network(): Network & { setOnline(online: boolean): void } {
+  network(): Network & { setOnline(online: boolean): void; dropConnections(): void } {
     let online = true
     const wake = new Set<() => void>()
+    const offline = new Set<() => void>()
     const mine = new Set<FakeSocket>()
     return {
       connect: (groupId) => {
@@ -110,10 +111,20 @@ export class FakeRelay {
           wake.delete(listener)
         }
       },
+      onOffline(listener) {
+        offline.add(listener)
+        return () => {
+          offline.delete(listener)
+        }
+      },
       setOnline(next) {
         online = next
-        if (!next) for (const socket of mine) socket.close()
-        else for (const listener of wake) listener()
+        if (next) for (const listener of wake) listener()
+        else for (const listener of offline) listener()
+      },
+      /** The connection drops without the phone noticing it's offline. */
+      dropConnections() {
+        for (const socket of mine) socket.close()
       },
     }
   }

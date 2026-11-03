@@ -41,12 +41,16 @@ export async function joinGroup(
       if (done) return
       done = true
       clearTimeout(timer)
+      stopListening()
       socket.close()
       resolve(outcome)
     }
     const timer = setTimeout(() => {
       finish('unreachable')
     }, timeout)
+    const stopListening = network.onOffline(() => {
+      finish('offline')
+    })
 
     /** Once the backlog is in: keep the group, if it decrypted to one. */
     const complete = async () => {

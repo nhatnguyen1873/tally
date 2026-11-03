@@ -46,6 +46,8 @@ export interface Network {
   isOnline(): boolean
   /** Calls back when the device comes online or the app comes to the foreground. */
   onWake(listener: () => void): () => void
+  /** Calls back when the device goes offline: an open socket can take minutes to notice. */
+  onOffline(listener: () => void): () => void
 }
 
 export const browserNetwork: Network = {
@@ -63,6 +65,12 @@ export const browserNetwork: Network = {
     return () => {
       window.removeEventListener('online', listener)
       document.removeEventListener('visibilitychange', visible)
+    }
+  },
+  onOffline(listener) {
+    window.addEventListener('offline', listener)
+    return () => {
+      window.removeEventListener('offline', listener)
     }
   },
 }
@@ -128,6 +136,9 @@ export class GroupSync {
       }),
       this.network.onWake(() => {
         this.wake()
+      }),
+      this.network.onOffline(() => {
+        this.offline()
       }),
     ]
     this.enqueue(async () => {
@@ -212,6 +223,15 @@ export class GroupSync {
     if (this.retryTimer) clearTimeout(this.retryTimer)
     this.retryTimer = null
     this.open()
+  }
+
+  /** Gone offline: drop the connection now, and wait to come back online. */
+  private offline(): void {
+    const socket = this.socket
+    if (!socket) return
+    this.dropConnection()
+    socket.close()
+    this.update()
   }
 
   /** Replaces this connection with a new one straight away. */
