@@ -187,7 +187,7 @@ Creating an item sets all of its required fields, deleting it sets `deleted: tru
 
 ### 6.4 On the device
 
-- **IndexedDB** holds each group (secret, chosen member, actor ID, clock state, sync cursor, last-read marker) and every operation in plaintext, marked pending or synced. State is rebuilt by folding the log on open, which takes milliseconds for thousands of operations.
+- **IndexedDB** holds each group (secret, chosen member, actor ID, clock state, sync cursor and epoch, last-read marker) and every operation in plaintext, marked pending or synced. Groups from before sync (milestone 2) upgrade in place as never uploaded. State is rebuilt by folding the log on open, which takes milliseconds for thousands of operations.
 - **Persistent storage:** the app calls `navigator.storage.persist()` after the first group is created or joined.
 - **Tabs:** several tabs can be open at once. They share IndexedDB and notify each other through BroadcastChannel.
 
@@ -195,11 +195,11 @@ Creating an item sets all of its required fields, deleting it sets `deleted: tru
 
 The protocol runs over a WebSocket at `/api/g/:groupId/ws`.
 
-- **Connect:** the client sends `hello { token, after, create? }`. The relay checks the token hash, or registers it for a new group when `create` is set, replies `welcome { now, head, epoch }`, then streams the operations after the cursor in batches. `epoch` is a random ID created along with the log.
-- **Push:** the client sends `push { ops }`. The relay appends them (deduplicating by ID), replies with `ack` (each ID's sequence number) and broadcasts them to the group's other connections.
-- **Errors:** `unauthorized`, `not_found`, `too_large`, `rate_limited` and `group_full`. For someone joining, `not_found` means the group hasn't been uploaded yet, shown as "Ask whoever shared this link to open Tally while online".
+- **Connect:** the client sends `hello { token, after, create? }`. The relay checks the token hash, or registers it for a new group when `create` is set, replies `welcome { now, head, epoch }`, then streams the operations after the cursor in batches of 100. `epoch` is a random ID created along with the log. A device registers the group (`create`) when it has never reached the relay; a hello for a group nobody created stores nothing.
+- **Push:** the client sends `push { ops }`. The relay appends them (deduplicating by ID), replies with `ack { acks: [{ id, seq }] }` (every pushed ID, including ones it already had) and broadcasts the new ones to the group's other connections. A device pushes up to 100 pending operations at a time, waiting for each `ack`.
+- **Errors:** `unauthorized`, `not_found`, `too_large`, `rate_limited` (with `retryAfter` in milliseconds) and `group_full`, plus `bad_request` for a message the relay can't parse. `unauthorized`, `not_found` and `bad_request` close the connection. For someone joining, `not_found` means the group hasn't been uploaded yet, shown as "Ask whoever shared this link to open Tally while online".
 - **Re-upload:** a device that already has the group treats `not_found` (the relay deleted it after a year idle) or a changed `epoch` as a fresh log. It registers the group again if needed, resets its cursor and uploads every operation it holds. The relay drops duplicates by ID, so several devices can do this at once.
-- **Reconnecting:** pending operations are pushed on every connect. Reconnects back off exponentially with jitter (1 to 30 seconds), and retry immediately on the `online` event and when the app becomes visible.
+- **Reconnecting:** pending operations are pushed on every connect. Reconnects back off exponentially with jitter (1 to 30 seconds), and retry immediately on the `online` event and when the app becomes visible. On the `offline` event the device drops its connection at once, rather than waiting for it to time out. The group on screen stays connected; any other group syncs until it's caught up with nothing to upload, then disconnects (Home catches every group up this way).
 - **Sync status** shown to the user: Synced, Syncing, Offline (n changes waiting), or Can't reach server.
 
 ### 6.6 Relay
@@ -207,7 +207,7 @@ The protocol runs over a WebSocket at `/api/g/:groupId/ws`.
 - **Worker:** one Cloudflare Worker serves the built app (static assets with a single-page fallback). It validates the group ID format, then routes `/api/g/:groupId/ws` to that group's Durable Object.
 - **Durable Object:** keeps the log in its SQLite storage and uses the WebSocket Hibernation API, so idle groups cost nothing.
 - **Retention:** every connection moves the group's deletion alarm to 12 months out. When the alarm fires, the Durable Object deletes all of its storage.
-- **Abuse limits:** besides the per-group limits in section 2, Cloudflare's rate-limiting binding caps new groups and connections per IP address.
+- **Abuse limits:** besides the per-group limits in section 2, Cloudflare's rate-limiting binding caps each IP address at 300 connections and 60 new groups a minute, per Cloudflare location. The caps are generous because many phones share an address behind mobile carriers' NAT.
 - **Local development:** `@cloudflare/vite-plugin` runs the same Worker and Durable Object inside `vite dev`, so one command starts everything.
 
 ## 7. Offline and PWA
@@ -237,7 +237,7 @@ The protocol runs over a WebSocket at `/api/g/:groupId/ws`.
 
 - **JavaScript:** at most 110 KB gzipped on the first load of any screen: the app, one language and that screen's code (React 19 is 67.5 KB of that, leaving about 40 KB for the app).
 - **CSS:** at most 15 KB gzipped.
-- **On demand:** the QR code, CSV export, About page and inactive language load only when needed.
+- **On demand:** the QR code, CSV export, About page, inactive language, join screens, share sheet and Join with a link load only when needed. Once the app is idle it fetches them all (the build lists their files), so they work even if the phone goes offline first.
 - **First paint:** the build prerenders the home screen, in English and in Vietnamese, and a loading frame for every other address into the HTML. The inline script shows the one that fits, so text appears before any JavaScript runs. Once the browser has shown it, the app replaces it with the same markup (instead of hydrating), keeping keyboard focus where it was.
 - **Loading:** the CSS is one stylesheet, so the first paint waits on a single small request. Every screen but home is its own chunk, and the app fetches them all once it's idle.
 - **Lighthouse:** run on the production build, served compressed as Cloudflare serves it, with mobile defaults (about 1.6 Mbps, 150 ms round trip, 4× slower CPU). Targets: Performance ≥ 95, Accessibility 100, Best Practices ≥ 95, LCP ≤ 2.0 s, Total Blocking Time ≤ 150 ms, CLS ≤ 0.05.
@@ -284,7 +284,7 @@ tally/
   - Applying the settle-up transfers zeroes every balance, uses at most n − 1 transfers, and matches a brute-force minimum for small groups.
   - Any delivery order of the same operations folds to the same state.
   - Encrypting then decrypting returns the original, and any tampering fails.
-- **Relay tests** run in the Workers runtime (`@cloudflare/vitest-pool-workers`) and cover auth, deduplication, cursors, limits, broadcast, the retention alarm and re-upload after deletion.
+- **Relay tests** run in the Workers runtime (`@cloudflare/vitest-plugin`, the successor to `vitest-pool-workers`, which doesn't support Vitest 5) and cover auth, deduplication, cursors, limits, broadcast, the retention alarm and re-upload after deletion.
 - **End-to-end tests** (Playwright, Chromium and mobile WebKit) run the walkthrough in section 3 with up to four browser contexts as separate phones, one of them going offline midway. They also cover joining by link, restoring from Activity, the CSV contents and both languages.
 - **Accessibility:** axe runs on every screen, in both themes and both languages.
 - **CI:** GitHub Actions runs on every push: typecheck, lint, unit and property tests, relay tests, build, bundle size, end-to-end tests with axe, then Lighthouse CI (median of three runs).
