@@ -10,6 +10,8 @@ import {
   type GroupRecord,
   listGroupRecords,
   loadOps,
+  markAllPending,
+  markSynced,
   putGroupRecord,
   saveOps,
 } from './db.ts'
@@ -115,6 +117,60 @@ export class GroupStore {
     return ops
   }
 
+  /**
+   * Joins as a new member: "I'm not on the list". The member is created by
+   * itself, which the activity feed reads as "joined".
+   */
+  async joinAs(name: string): Promise<void> {
+    const me = randomId()
+    this.record = { ...this.record, me }
+    await this.write([{ entity: 'member', key: me, set: { name } }])
+  }
+
+  /**
+   * Takes operations from the relay. They may repeat ones this device has;
+   * saving one again changes nothing but marks it synced.
+   */
+  async receive(ops: readonly Op[], cursor: number): Promise<void> {
+    const record = { ...this.record, cursor: Math.max(this.record.cursor, cursor) }
+    await saveOps(record, ops, true)
+    this.record = record
+    const known = new Set(this.ops.map((op) => op.id))
+    const added = ops.filter((op) => !known.has(op.id))
+    this.ops = [...this.ops, ...added]
+    this.publish(added.length > 0)
+    // Whatever this device writes next sorts after what it has seen.
+    this.clock = startingClock(this.record, this.view.state)
+    announce(record.id)
+  }
+
+  /** The relay has these operations, and the log up to `cursor`. */
+  async synced(ids: readonly string[], cursor: number): Promise<void> {
+    this.record = { ...this.record, cursor: Math.max(this.record.cursor, cursor) }
+    await markSynced(this.record, ids)
+    this.publish(false)
+    announce(this.record.id)
+  }
+
+  /** Remembers which relay log this device syncs with. */
+  async setEpoch(epoch: string): Promise<void> {
+    this.record = { ...this.record, epoch }
+    await putGroupRecord(this.record)
+    this.publish(false)
+  }
+
+  /**
+   * The relay's log started over (deleted after a year idle, or uploaded
+   * again from elsewhere): upload everything again, into `epoch` or into a
+   * new log when it's null.
+   */
+  async startOver(epoch: string | null): Promise<void> {
+    this.record = { ...this.record, cursor: 0, epoch }
+    await markAllPending(this.record)
+    this.publish(false)
+    announce(this.record.id)
+  }
+
   /** Changes what this device keeps about the group: who it is, what it has read. */
   async update(patch: Partial<Pick<GroupRecord, 'me' | 'readUpTo' | 'openedAt'>>): Promise<void> {
     this.record = { ...this.record, ...patch }
@@ -212,6 +268,8 @@ export async function createGroup({ name, currency, myName, others }: NewGroup):
       addedAt: now,
       openedAt: now,
       readUpTo: latest,
+      cursor: 0,
+      epoch: null,
     },
     ops,
   )
@@ -219,6 +277,47 @@ export async function createGroup({ name, currency, myName, others }: NewGroup):
   announce(id)
   keepStorage()
   return id
+}
+
+export interface JoinedGroup {
+  readonly id: string
+  readonly secret: string
+  readonly ops: readonly Op[]
+  readonly cursor: number
+  readonly epoch: string
+  /** The latest clock in `ops`: what's already there counts as read. */
+  readonly latest: string | null
+}
+
+/** Keeps a group downloaded from the relay. Who this device is comes next, so `me` starts empty. */
+export async function saveJoinedGroup({
+  id,
+  secret,
+  ops,
+  cursor,
+  epoch,
+  latest,
+}: JoinedGroup): Promise<void> {
+  const now = Date.now()
+  await saveOps(
+    {
+      id,
+      secret,
+      actor: randomId(),
+      me: null,
+      clock: null,
+      addedAt: now,
+      openedAt: now,
+      readUpTo: latest,
+      cursor,
+      epoch,
+    },
+    ops,
+    true,
+  )
+  stores.delete(id)
+  announce(id)
+  keepStorage()
 }
 
 export async function removeGroup(groupId: string): Promise<void> {

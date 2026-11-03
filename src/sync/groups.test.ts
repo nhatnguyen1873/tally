@@ -277,6 +277,8 @@ describe('another tab', () => {
       addedAt: Date.now(),
       openedAt: Date.now(),
       readUpTo: null,
+      cursor: 0,
+      epoch: null,
     }
     await saveOps(record, ops)
     await (await groupStore(id))?.update({ openedAt: Date.now() })
