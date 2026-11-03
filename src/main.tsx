@@ -86,6 +86,16 @@ const whenIdle = (run: () => void) => {
 }
 whenIdle(() => {
   preloadScreens()
+  // Parts of screens that load when first shown, which the build lists
+  // (scripts/prerender.mjs): fetched now, so they're ready even if the phone
+  // goes offline before they're needed.
+  const parts = document.querySelector<HTMLMetaElement>('meta[name="tally-preload"]')
+  for (const href of parts?.content.split(' ').filter(Boolean) ?? []) {
+    const link = document.createElement('link')
+    link.rel = 'modulepreload'
+    link.href = href
+    document.head.append(link)
+  }
   try {
     sessionStorage.removeItem(RELOADED)
   } catch {

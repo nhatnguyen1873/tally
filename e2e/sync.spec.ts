@@ -164,6 +164,28 @@ test.describe('joining', () => {
   })
 })
 
+test('the share sheet still opens after going offline', async ({
+  page: minh,
+  browser,
+}, testInfo) => {
+  const invite = await createTrip(minh)
+  // A phone that has never opened the share sheet, so hasn't needed its code.
+  const an = await phone(browser, testInfo)
+  await joinAs(an.page, invite, 'An')
+  // Once idle, the app fetches the parts that load on demand.
+  await expect
+    .poll(() =>
+      an.page.evaluate<boolean>(
+        "performance.getEntriesByType('resource').some((entry) => entry.name.includes('/ShareSheet-'))",
+      ),
+    )
+    .toBe(true)
+  await an.context.setOffline(true)
+  await an.page.getByRole('button', { name: 'Invite people' }).click()
+  await expect(an.page.getByRole('img', { name: 'QR code of the invite link' })).toBeVisible()
+  await an.context.close()
+})
+
 test('the share sheet passes axe in both themes', async ({ page }) => {
   await createTrip(page)
   for (const colorScheme of ['light', 'dark'] as const) {

@@ -1,4 +1,13 @@
-import { type ReactNode, use, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import {
+  lazy,
+  type ReactNode,
+  Suspense,
+  use,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from 'react'
 import { Link, useParams } from 'wouter'
 
 import type { GroupInfo, GroupState } from '../../domain/fold.ts'
@@ -24,11 +33,19 @@ import {
 } from '../../ui/icons.ts'
 import { Page } from '../../ui/Page.tsx'
 import { useToast } from '../../ui/Toast.tsx'
-import { JoinScreen } from '../join/JoinScreen.tsx'
-import { WhoAreYou } from '../join/WhoAreYou.tsx'
-import { ShareSheet } from '../share/ShareSheet.tsx'
 import styles from './group.module.css'
 import { makePeople, type People } from './people.ts'
+
+// Joining and sharing load on demand: most visits need neither.
+const JoinScreen = lazy(() =>
+  import('../join/JoinScreen.tsx').then(({ JoinScreen }) => ({ default: JoinScreen })),
+)
+const WhoAreYou = lazy(() =>
+  import('../join/WhoAreYou.tsx').then(({ WhoAreYou }) => ({ default: WhoAreYou })),
+)
+export const ShareSheet = lazy(() =>
+  import('../share/ShareSheet.tsx').then(({ ShareSheet }) => ({ default: ShareSheet })),
+)
 
 export interface Group {
   readonly id: string
@@ -172,16 +189,20 @@ export function GroupTabsPage({
       className={floating ? `${styles.tabsPage} ${styles.withFloating}` : styles.tabsPage}
       footer={
         <>
-          <ShareSheet
-            open={sharing}
-            groupId={group.id}
-            secret={group.view.record.secret}
-            groupName={group.info.name}
-            onClose={() => {
-              setSharing(false)
-              clearShareRequest()
-            }}
-          />
+          {sharing && (
+            <Suspense>
+              <ShareSheet
+                open
+                groupId={group.id}
+                secret={group.view.record.secret}
+                groupName={group.info.name}
+                onClose={() => {
+                  setSharing(false)
+                  clearShareRequest()
+                }}
+              />
+            </Suspense>
+          )}
           {floating}
           <nav className={styles.tabs} aria-label={t('group.tabs')}>
             <ul className={styles.tabList}>

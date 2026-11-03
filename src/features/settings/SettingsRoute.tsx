@@ -1,4 +1,4 @@
-import { type SubmitEvent, useMemo, useState } from 'react'
+import { type SubmitEvent, Suspense, useMemo, useState } from 'react'
 import { useLocation } from 'wouter'
 
 import type { Member } from '../../domain/fold.ts'
@@ -19,9 +19,8 @@ import { Download, Share2, Trash, Undo2, UserPlus } from '../../ui/icons.ts'
 import { Page, pageStyles, Section } from '../../ui/Page.tsx'
 import { useToast } from '../../ui/Toast.tsx'
 import { currencyOptions } from '../group/currencies.ts'
-import { type Group, GroupGate, groupStyles, useSyncStatus } from '../group/group.tsx'
+import { type Group, GroupGate, groupStyles, ShareSheet, useSyncStatus } from '../group/group.tsx'
 import { cleanText } from '../group/people.ts'
-import { ShareSheet } from '../share/ShareSheet.tsx'
 import { downloadText, fileNameFor } from './download.ts'
 import styles from './SettingsRoute.module.css'
 
@@ -201,15 +200,19 @@ function SettingsScreen({ group }: { group: Group }) {
           setConfirming(false)
         }}
       />
-      <ShareSheet
-        open={sharing}
-        groupId={group.id}
-        secret={group.view.record.secret}
-        groupName={info.name}
-        onClose={() => {
-          setSharing(false)
-        }}
-      />
+      {sharing && (
+        <Suspense>
+          <ShareSheet
+            open
+            groupId={group.id}
+            secret={group.view.record.secret}
+            groupName={info.name}
+            onClose={() => {
+              setSharing(false)
+            }}
+          />
+        </Suspense>
+      )}
     </Page>
   )
 }

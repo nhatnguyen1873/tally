@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { Link } from 'wouter'
 
 import { Preferences } from '../../app/Preferences.tsx'
@@ -10,7 +10,11 @@ import { Link as LinkIcon, Plus, Users } from '../../ui/icons.ts'
 import { Page, pageStyles, Section } from '../../ui/Page.tsx'
 import groupStyles from '../group/group.module.css'
 import styles from './HomeRoute.module.css'
-import { JoinDialog } from './JoinDialog.tsx'
+
+// Loads when tapped, keeping it out of every screen's first load.
+const JoinDialog = lazy(() =>
+  import('./JoinDialog.tsx').then(({ JoinDialog }) => ({ default: JoinDialog })),
+)
 
 /**
  * The groups on this device. Their code (IndexedDB, folding, sync) loads
@@ -71,12 +75,16 @@ export function HomeRoute() {
           </Button>
         </div>
       </section>
-      <JoinDialog
-        open={joining}
-        onClose={() => {
-          setJoining(false)
-        }}
-      />
+      {joining && (
+        <Suspense>
+          <JoinDialog
+            open
+            onClose={() => {
+              setJoining(false)
+            }}
+          />
+        </Suspense>
+      )}
 
       {groups && (
         <>

@@ -2,6 +2,8 @@
 // - renders the first screens into #root (src/prerender.tsx), so one paints
 //   before the JavaScript has downloaded and run;
 // - tells the inline boot script each language's catalog file, to preload;
+// - lists the files of the parts of screens that load on demand, for the app
+//   to fetch once idle (main.tsx), without adding imports to the bundle;
 // - allows the boot script in the CSP by its hash, so no other inline script
 //   can run.
 // Runs after `vite build`.
@@ -16,6 +18,16 @@ const HEADERS = 'dist/client/_headers'
 const MANIFEST = 'dist/client/.vite/manifest.json'
 const ROOT = '<div id="root"></div>'
 const CATALOGS = 'var catalogs = {}'
+/** Parts that load when first shown: preloaded so they work if the phone goes offline first. */
+const PARTS = [
+  'src/features/join/JoinScreen.tsx',
+  'src/features/join/WhoAreYou.tsx',
+  'src/features/share/ShareSheet.tsx',
+  '/uqr/',
+  'src/features/home/JoinDialog.tsx',
+  'src/features/activity/History.tsx',
+  'src/domain/csv.ts',
+]
 
 await build({ configFile: 'vite.prerender.config.ts' })
 const { render } = await import(pathToFileURL('dist/prerender/prerender.js').href)
@@ -34,6 +46,27 @@ const catalogs = Object.fromEntries(
 )
 if (!html.includes(CATALOGS)) throw new Error(`${CATALOGS} not found in ${PAGE}`)
 html = html.replace(CATALOGS, () => `var catalogs = ${JSON.stringify(catalogs)}`)
+
+/** A chunk's file and every file it imports. */
+function files(key, found = new Set()) {
+  const chunk = manifest[key]
+  if (!chunk || found.has(chunk.file)) return found
+  found.add(chunk.file)
+  for (const imported of chunk.imports ?? []) files(imported, found)
+  return found
+}
+// The page already loads the entry and what it imports.
+const entryKey = Object.keys(manifest).find((name) => manifest[name].isEntry)
+const loaded = files(entryKey)
+const partFiles = new Set()
+for (const part of PARTS) {
+  const key = Object.keys(manifest).find((name) => name === part || name.includes(part))
+  if (!key) throw new Error(`No chunk for ${part} in ${MANIFEST}`)
+  for (const file of files(key)) if (!loaded.has(file)) partFiles.add(`/${file}`)
+}
+const preload = `<meta name="tally-preload" content="${[...partFiles].join(' ')}" />`
+if (!html.includes('</head>')) throw new Error(`</head> not found in ${PAGE}`)
+html = html.replace('</head>', () => `${preload}\n  </head>`)
 writeFileSync(PAGE, html)
 
 const inline = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1] ?? '')
