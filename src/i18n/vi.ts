@@ -144,6 +144,16 @@ export const vi: Catalog = {
   'update.ready': 'Đã có phiên bản mới',
   'update.reload': 'Tải lại',
 
+  'install.title': 'Cài đặt Tally',
+  'install.body': 'Mở từ màn hình chính như một ứng dụng, kể cả khi không có mạng.',
+  'install.button': 'Cài đặt',
+  'install.iosBefore': 'Nhấn Chia sẻ',
+  'install.iosAfter':
+    ', rồi chọn Thêm vào MH chính. Khi đã cài, Tally giữ các nhóm của bạn kể cả khi lâu không mở.',
+  'inApp.text':
+    'Trình duyệt có sẵn trong ứng dụng này lưu dữ liệu của Tally riêng và không cài được Tally.',
+  'inApp.how': 'Nhấn ⋯ hoặc Chia sẻ, rồi chọn Mở bằng trình duyệt.',
+
   'expenses.add': 'Thêm khoản chi',
   'expenses.empty': 'Chưa có khoản chi nào. Hãy thêm khoản đầu tiên, như bữa tối hay tiền taxi.',
   'expenses.today': 'Hôm nay',

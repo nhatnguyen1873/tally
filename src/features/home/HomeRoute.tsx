@@ -10,6 +10,7 @@ import { Link as LinkIcon, Plus, Users } from '../../ui/icons.ts'
 import { Page, pageStyles, Section } from '../../ui/Page.tsx'
 import groupStyles from '../group/group.module.css'
 import styles from './HomeRoute.module.css'
+import { InstallHint } from './InstallHint.tsx'
 
 // Loads when tapped, keeping it out of every screen's first load.
 const JoinDialog = lazy(() =>
@@ -101,6 +102,7 @@ export function HomeRoute() {
               </ul>
             )}
           </Section>
+          <InstallHint />
           <Preferences />
         </>
       )}

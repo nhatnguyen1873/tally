@@ -19,3 +19,25 @@
   flex-wrap: wrap;
   gap: var(--space-3);
 }
+
+.install {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-2) var(--space-4) var(--space-5);
+}
+
+.installText {
+  display: grid;
+  flex: 1;
+  gap: var(--space-3);
+}
+
+.installTitle {
+  font-size: var(--text-lg);
+}
+
+.shareIcon {
+  margin-left: 0.25em;
+  vertical-align: -0.2em;
+}

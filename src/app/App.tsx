@@ -6,6 +6,7 @@ import type { Language } from '../i18n/language.ts'
 import { ToastProvider } from '../ui/Toast.tsx'
 import { applyTheme, usePrefs } from './prefs.ts'
 import { Routes } from './Routes.tsx'
+import { InAppBrowserHint } from './InAppBrowserHint.tsx'
 import { Shell } from './Shell.tsx'
 import { UpdatePrompt } from './UpdatePrompt.tsx'
 
@@ -21,7 +22,14 @@ export function App({ initial }: { initial: { language: Language; catalog: Catal
   return (
     <I18nProvider initial={initial}>
       <Theme />
-      <ToastProvider lasting={<UpdatePrompt />}>
+      <ToastProvider
+        lasting={
+          <>
+            <InAppBrowserHint />
+            <UpdatePrompt />
+          </>
+        }
+      >
         <Suspense fallback={<Shell />}>
           <Routes />
         </Suspense>

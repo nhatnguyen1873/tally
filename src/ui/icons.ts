@@ -35,6 +35,7 @@ export {
   Scale,
   Search,
   Settings,
+  Share,
   Share2,
   Trash,
   Undo2,

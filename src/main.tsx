@@ -7,6 +7,7 @@ import { createRoot } from 'react-dom/client'
 
 import { App } from './app/App.tsx'
 import { applyTheme, getPrefs } from './app/prefs.ts'
+import { listenForInstall } from './app/install.ts'
 import { preloadScreens } from './app/Routes.tsx'
 import { registerServiceWorker } from './app/updates.ts'
 import { loadCatalog, resolveLanguage } from './i18n/language.ts'
@@ -25,6 +26,8 @@ window.addEventListener('vite:preloadError', (event) => {
   event.preventDefault()
   window.location.reload()
 })
+
+listenForInstall()
 
 const root = document.getElementById('root')
 if (!root) throw new Error('Missing #root element')

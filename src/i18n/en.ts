@@ -149,6 +149,15 @@ export const en = {
   'update.ready': 'New version ready',
   'update.reload': 'Reload',
 
+  'install.title': 'Install Tally',
+  'install.body': 'Open it from your home screen like an app, even offline.',
+  'install.button': 'Install',
+  'install.iosBefore': 'Tap Share',
+  'install.iosAfter':
+    ', then Add to Home Screen. Installed, Tally keeps your groups even if you don’t open it for a while.',
+  'inApp.text': 'This app’s built-in browser keeps Tally’s data apart and can’t install it.',
+  'inApp.how': 'Tap ⋯ or Share, then Open in browser.',
+
   'expenses.add': 'Add expense',
   'expenses.empty': 'No expenses yet. Add the first one, like dinner or a taxi.',
   'expenses.today': 'Today',
