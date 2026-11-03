@@ -20,6 +20,8 @@ export const en = {
   'action.remove': 'Remove',
   'action.restore': 'Restore',
   'action.dismiss': 'Dismiss',
+  'action.close': 'Close',
+  'action.retry': 'Try again',
 
   'person.you': 'You',
   'person.youObject': 'you',
@@ -35,6 +37,11 @@ export const en = {
     'Start a group for a trip, a shared flat or anything else you split. Everyone in it can add expenses.',
   'home.lastChange': 'Last change {time}',
   'home.people': { one: '{count} person', other: '{count} people' },
+  'home.join': 'Join with a link',
+  'home.joinTitle': 'Join a group',
+  'home.joinField': 'Invite link',
+  'home.joinHint': 'Paste the invite link someone sent you.',
+  'home.joinButton': 'Open group',
 
   'summary.owed': 'You’re owed {amount}',
   'summary.owe': 'You owe {amount}',
@@ -71,6 +78,7 @@ export const en = {
     'Two people have the same name. Make them different, like “An” and “An B”.',
   'error.tooLong': 'Use at most {max} characters.',
   'error.nameTaken': 'Someone in the group already has that name.',
+  'error.invite': 'That isn’t a whole Tally invite link. It ends with # and a long code.',
   'error.name': 'Enter a name.',
   'error.amount': 'Enter an amount.',
   'error.amountTooLarge': 'That’s more than Tally can record.',
@@ -88,7 +96,55 @@ export const en = {
   'group.settings': 'Group settings',
   'group.pageTitle': '{page} · {group}',
   'group.missing.title': 'This group isn’t on this device',
-  'group.missing.body': 'It may have been removed from this phone.',
+  'group.missing.body': 'If someone shared it with you, open the whole link they sent.',
+  'group.share': 'Invite people',
+
+  'join.downloading': 'Downloading the group…',
+  'join.offline.title': 'You’re offline',
+  'join.offline.body':
+    'Opening a group for the first time needs a connection. After that, it works offline too.',
+  'join.notFound.title': 'This group isn’t ready yet',
+  'join.notFound.body': 'Ask whoever shared this link to open Tally while online, then try again.',
+  'join.badLink.title': 'This link doesn’t work',
+  'join.badLink.body': 'It may have been cut short or changed. Ask for the link again.',
+  'join.unreachable.title': 'Can’t reach Tally',
+  'join.unreachable.body': 'Check your connection, then try again.',
+  'join.incomplete.title': 'This link is missing its key',
+  'join.incomplete.body': 'Invite links end with # and a long code. Ask for the whole link again.',
+
+  'who.title': 'Who are you?',
+  'who.body': 'Pick your name. What you add on this phone shows under it.',
+  'who.removed': 'You were removed from this group. Pick your name again, or join as someone new.',
+  'who.people': 'People in {group}',
+  'who.notListed': 'I’m not on the list',
+  'who.join': 'Join the group',
+
+  'sync.synced': 'Synced',
+  'sync.syncing': 'Syncing…',
+  'sync.offline': 'Offline',
+  'sync.offlineWaiting': {
+    one: 'Offline · {count} change waiting',
+    other: 'Offline · {count} changes waiting',
+  },
+  'sync.unreachable': 'Can’t reach server',
+  'sync.detail.synced': 'Everyone with the link sees the same changes.',
+  'sync.detail.syncing': 'Sending and receiving changes.',
+  'sync.detail.offline': 'Changes are saved on this phone and upload when you’re back online.',
+  'sync.detail.unreachable':
+    'Changes are saved on this phone, but can’t reach other phones right now.',
+
+  'clock.off':
+    'This phone’s clock is {minutes} minutes off. Set it to update automatically, so changes stay in order.',
+
+  'share.title': 'Invite people',
+  'share.body': 'Send the link to the group chat, or let friends nearby scan the code.',
+  'share.qr': 'QR code of the invite link',
+  'share.link': 'Invite link',
+  'share.copy': 'Copy link',
+  'share.copied': 'Link copied',
+  'share.share': 'Share…',
+  'share.shareText': 'Join {group} on Tally',
+  'share.warning': 'Anyone with this link can see and edit the group.',
 
   'expenses.add': 'Add expense',
   'expenses.empty': 'No expenses yet. Add the first one, like dinner or a taxi.',
@@ -244,6 +300,12 @@ export const en = {
   'settings.removeButton': 'Remove group',
   'settings.removeConfirm': 'Remove “{name}” from this device?',
   'settings.removeConfirmBody': 'This can’t be undone.',
+  'settings.invite': 'Invite',
+  'settings.inviteHint': 'Anyone with the link can see and edit this group.',
+  'settings.pending': {
+    one: '{count} change hasn’t reached other phones yet. Removing the group now loses it.',
+    other: '{count} changes haven’t reached other phones yet. Removing the group now loses them.',
+  },
 
   'csv.date': 'Date',
   'csv.type': 'Type',

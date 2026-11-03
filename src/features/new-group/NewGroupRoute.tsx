@@ -66,7 +66,8 @@ export default function NewGroupRoute() {
       myName: cleanText(myName),
       others: people,
     })
-    navigate(`/g/${id}`, { replace: true })
+    // The new group opens with its invite, ready to send (SPEC.md section 3, step 2).
+    navigate(`/g/${id}`, { replace: true, state: { share: true } })
   }
 
   return (

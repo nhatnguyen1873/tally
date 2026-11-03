@@ -18,6 +18,8 @@ export const vi: Catalog = {
   'action.remove': 'Xóa',
   'action.restore': 'Khôi phục',
   'action.dismiss': 'Đóng',
+  'action.close': 'Đóng',
+  'action.retry': 'Thử lại',
 
   'person.you': 'Bạn',
   'person.youObject': 'bạn',
@@ -33,6 +35,11 @@ export const vi: Catalog = {
     'Tạo một nhóm cho chuyến đi, phòng trọ chung hay bất cứ khoản nào cần chia. Ai trong nhóm cũng thêm được khoản chi.',
   'home.lastChange': 'Thay đổi gần nhất {time}',
   'home.people': { other: '{count} người' },
+  'home.join': 'Tham gia bằng link',
+  'home.joinTitle': 'Tham gia nhóm',
+  'home.joinField': 'Link mời',
+  'home.joinHint': 'Dán link mời mà người khác đã gửi cho bạn.',
+  'home.joinButton': 'Mở nhóm',
 
   'summary.owed': 'Bạn được nhận lại {amount}',
   'summary.owe': 'Bạn còn nợ {amount}',
@@ -68,6 +75,8 @@ export const vi: Catalog = {
   'error.duplicateNames': 'Có hai người trùng tên. Hãy đặt khác nhau, ví dụ “An” và “An B”.',
   'error.tooLong': 'Tối đa {max} ký tự.',
   'error.nameTaken': 'Trong nhóm đã có người tên này.',
+  'error.invite':
+    'Đây không phải link mời Tally đầy đủ. Link mời kết thúc bằng dấu # và một đoạn mã dài.',
   'error.name': 'Hãy nhập tên.',
   'error.amount': 'Hãy nhập số tiền.',
   'error.amountTooLarge': 'Số tiền này lớn hơn mức Tally ghi được.',
@@ -85,7 +94,52 @@ export const vi: Catalog = {
   'group.settings': 'Cài đặt nhóm',
   'group.pageTitle': '{page} · {group}',
   'group.missing.title': 'Nhóm này không có trên thiết bị',
-  'group.missing.body': 'Có thể nhóm đã bị xóa khỏi điện thoại này.',
+  'group.missing.body': 'Nếu ai đó đã chia sẻ nhóm này với bạn, hãy mở đúng link họ đã gửi.',
+  'group.share': 'Mời mọi người',
+
+  'join.downloading': 'Đang tải nhóm về…',
+  'join.offline.title': 'Bạn đang ngoại tuyến',
+  'join.offline.body': 'Lần đầu mở nhóm cần có mạng. Sau đó, bạn dùng được cả khi không có mạng.',
+  'join.notFound.title': 'Nhóm này chưa sẵn sàng',
+  'join.notFound.body': 'Hãy nhờ người đã gửi link mở Tally khi có mạng, rồi thử lại.',
+  'join.badLink.title': 'Link này không dùng được',
+  'join.badLink.body': 'Có thể link đã bị cắt ngắn hoặc bị sửa. Hãy xin lại link.',
+  'join.unreachable.title': 'Không kết nối được Tally',
+  'join.unreachable.body': 'Hãy kiểm tra kết nối mạng rồi thử lại.',
+  'join.incomplete.title': 'Link này bị thiếu mã khóa',
+  'join.incomplete.body':
+    'Link mời kết thúc bằng dấu # và một đoạn mã dài. Hãy xin lại toàn bộ link.',
+
+  'who.title': 'Bạn là ai?',
+  'who.body': 'Chọn tên của bạn. Những gì bạn thêm trên điện thoại này sẽ hiện dưới tên đó.',
+  'who.removed': 'Bạn đã bị xóa khỏi nhóm này. Hãy chọn lại tên, hoặc tham gia với tên mới.',
+  'who.people': 'Thành viên của {group}',
+  'who.notListed': 'Tôi không có trong danh sách',
+  'who.join': 'Tham gia nhóm',
+
+  'sync.synced': 'Đã đồng bộ',
+  'sync.syncing': 'Đang đồng bộ…',
+  'sync.offline': 'Ngoại tuyến',
+  'sync.offlineWaiting': { other: 'Ngoại tuyến · {count} thay đổi đang chờ' },
+  'sync.unreachable': 'Không kết nối được máy chủ',
+  'sync.detail.synced': 'Mọi người có link đều thấy những thay đổi giống nhau.',
+  'sync.detail.syncing': 'Đang gửi và nhận thay đổi.',
+  'sync.detail.offline': 'Thay đổi được lưu trên điện thoại này và sẽ tải lên khi có mạng trở lại.',
+  'sync.detail.unreachable':
+    'Thay đổi vẫn được lưu trên điện thoại này, nhưng hiện chưa gửi được tới điện thoại khác.',
+
+  'clock.off':
+    'Đồng hồ của điện thoại này lệch {minutes} phút. Hãy bật chế độ đặt giờ tự động để các thay đổi giữ đúng thứ tự.',
+
+  'share.title': 'Mời mọi người',
+  'share.body': 'Gửi link vào nhóm chat, hoặc để bạn bè ở gần quét mã.',
+  'share.qr': 'Mã QR của link mời',
+  'share.link': 'Link mời',
+  'share.copy': 'Sao chép link',
+  'share.copied': 'Đã sao chép link',
+  'share.share': 'Chia sẻ…',
+  'share.shareText': 'Tham gia {group} trên Tally',
+  'share.warning': 'Bất kỳ ai có link này đều xem và sửa được nhóm.',
 
   'expenses.add': 'Thêm khoản chi',
   'expenses.empty': 'Chưa có khoản chi nào. Hãy thêm khoản đầu tiên, như bữa tối hay tiền taxi.',
@@ -238,6 +292,12 @@ export const vi: Catalog = {
   'settings.removeButton': 'Xóa nhóm',
   'settings.removeConfirm': 'Xóa “{name}” khỏi thiết bị này?',
   'settings.removeConfirmBody': 'Không thể hoàn tác.',
+  'settings.invite': 'Mời',
+  'settings.inviteHint': 'Bất kỳ ai có link đều xem và sửa được nhóm này.',
+  'settings.pending': {
+    other:
+      '{count} thay đổi chưa được gửi tới điện thoại khác. Nếu xóa nhóm bây giờ, các thay đổi này sẽ mất.',
+  },
 
   'csv.date': 'Ngày',
   'csv.type': 'Loại',

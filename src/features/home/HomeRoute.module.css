@@ -13,3 +13,9 @@
   font-weight: 600;
   line-height: 1.4;
 }
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}

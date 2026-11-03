@@ -1,0 +1,35 @@
+.loading {
+  min-height: 12rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+/* A member to pick: a whole row, as tall as a list row. */
+.choice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 4rem;
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.choice:hover {
+  background: var(--color-surface-2);
+}
+
+.form {
+  display: grid;
+  gap: var(--space-4);
+}

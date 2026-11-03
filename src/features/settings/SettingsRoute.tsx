@@ -10,16 +10,18 @@ import { Preferences } from '../../app/Preferences.tsx'
 import { todayIso } from '../../i18n/format.ts'
 import { useI18n } from '../../i18n/I18nProvider.tsx'
 import { removeGroup } from '../../sync/groups.ts'
+import { stopSync } from '../../sync/manager.ts'
 import { Avatar } from '../../ui/Avatar.tsx'
 import { Button, IconButton } from '../../ui/Button.tsx'
 import { ConfirmDialog } from '../../ui/ConfirmDialog.tsx'
 import { SelectField, TextField } from '../../ui/Field.tsx'
-import { Download, Trash, Undo2, UserPlus } from '../../ui/icons.ts'
+import { Download, Share2, Trash, Undo2, UserPlus } from '../../ui/icons.ts'
 import { Page, pageStyles, Section } from '../../ui/Page.tsx'
 import { useToast } from '../../ui/Toast.tsx'
 import { currencyOptions } from '../group/currencies.ts'
-import { type Group, GroupGate, groupStyles } from '../group/group.tsx'
+import { type Group, GroupGate, groupStyles, useSyncStatus } from '../group/group.tsx'
 import { cleanText } from '../group/people.ts'
+import { ShareSheet } from '../share/ShareSheet.tsx'
 import { downloadText, fileNameFor } from './download.ts'
 import styles from './SettingsRoute.module.css'
 
@@ -41,6 +43,8 @@ function SettingsScreen({ group }: { group: Group }) {
   const { people, info, state, store } = group
   const [name, setName] = useState(info.name)
   const [confirming, setConfirming] = useState(false)
+  const [sharing, setSharing] = useState(false)
+  const { pending } = useSyncStatus(group.id)
   const toast = useToast()
   // Changing the currency would reinterpret every recorded amount.
   const locked = state.expenses.size > 0 || state.payments.size > 0
@@ -140,6 +144,20 @@ function SettingsScreen({ group }: { group: Group }) {
         />
       </Section>
 
+      <Section title={t('settings.invite')}>
+        <p className={groupStyles.muted}>{t('settings.inviteHint')}</p>
+        <div>
+          <Button
+            icon={Share2}
+            onClick={() => {
+              setSharing(true)
+            }}
+          >
+            {t('group.share')}
+          </Button>
+        </div>
+      </Section>
+
       <Section title={t('settings.export')}>
         <p className={groupStyles.muted}>{t('settings.exportHint')}</p>
         <div>
@@ -169,15 +187,27 @@ function SettingsScreen({ group }: { group: Group }) {
       <ConfirmDialog
         open={confirming}
         title={t('settings.removeConfirm', { name: info.name })}
-        body={t('settings.removeConfirmBody')}
+        body={
+          pending > 0 ? t('settings.pending', { count: pending }) : t('settings.removeConfirmBody')
+        }
         confirmLabel={t('settings.removeButton')}
         onConfirm={() => {
+          stopSync(group.id)
           void removeGroup(group.id).then(() => {
             navigate('/', { replace: true })
           })
         }}
         onClose={() => {
           setConfirming(false)
+        }}
+      />
+      <ShareSheet
+        open={sharing}
+        groupId={group.id}
+        secret={group.view.record.secret}
+        groupName={info.name}
+        onClose={() => {
+          setSharing(false)
         }}
       />
     </Page>

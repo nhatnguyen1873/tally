@@ -146,3 +146,15 @@ a.row:hover {
 .strong {
   font-weight: 700;
 }
+
+/* Under the header when the phone's clock is off. */
+.clock {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  max-width: var(--page-width);
+  margin: 0 auto;
+  padding: var(--space-2) var(--space-4);
+  color: var(--color-negative);
+  font-size: var(--text-sm);
+}

@@ -5,9 +5,7 @@
 import { fromBase64url, toBase64url } from '../../shared/base64url.ts'
 import type { WireOp } from '../../shared/protocol.ts'
 import { isOp, type Op } from '../domain/ops.ts'
-
-/** The secret: 32 random bytes, base64url. */
-export const SECRET = /^[A-Za-z0-9_-]{43}$/
+import { SECRET } from './links.ts'
 
 export interface GroupKeys {
   readonly key: CryptoKey

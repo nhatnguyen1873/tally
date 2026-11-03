@@ -76,6 +76,10 @@ test.describe('keyboard only', () => {
     await page.keyboard.press('Tab')
     await page.keyboard.type('An')
     await page.keyboard.press('Enter')
+    const invite = page.getByRole('dialog', { name: 'Invite people' })
+    await expect(invite).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(invite).toBeHidden()
     await expect(page.getByText('You’re settled up')).toBeVisible()
 
     await page.getByRole('link', { name: 'Add expense' }).focus()

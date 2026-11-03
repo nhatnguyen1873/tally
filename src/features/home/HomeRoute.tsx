@@ -4,28 +4,39 @@ import { Link } from 'wouter'
 import { Preferences } from '../../app/Preferences.tsx'
 import { useI18n } from '../../i18n/I18nProvider.tsx'
 import type { GroupSummary } from '../../sync/groups.ts'
-import { ButtonLink } from '../../ui/Button.tsx'
+import { Button, ButtonLink } from '../../ui/Button.tsx'
 import { EmptyState } from '../../ui/EmptyState.tsx'
-import { Plus, Users } from '../../ui/icons.ts'
+import { Link as LinkIcon, Plus, Users } from '../../ui/icons.ts'
 import { Page, pageStyles, Section } from '../../ui/Page.tsx'
 import groupStyles from '../group/group.module.css'
 import styles from './HomeRoute.module.css'
+import { JoinDialog } from './JoinDialog.tsx'
 
 /**
- * The groups on this device. Their code (IndexedDB, folding) loads after the
- * first render, so it isn't on the critical path for the first paint.
+ * The groups on this device. Their code (IndexedDB, folding, sync) loads
+ * after the first render, so it isn't on the critical path for the first
+ * paint. Once listed, every group catches up with the relay in the
+ * background, so the balances shown are current.
  */
 function useGroupSummaries(): GroupSummary[] | null {
   const [summaries, setSummaries] = useState<GroupSummary[] | null>(null)
   useEffect(() => {
     let live = true
     let stop: (() => void) | undefined
-    void import('../../sync/groups.ts').then(({ getSummaries, subscribeSummaries }) => {
-      if (!live) return
-      stop = subscribeSummaries(() => {
-        setSummaries(getSummaries())
-      })
-    })
+    let caughtUp = false
+    void Promise.all([import('../../sync/groups.ts'), import('../../sync/manager.ts')]).then(
+      ([{ getSummaries, subscribeSummaries }, { catchUp }]) => {
+        if (!live) return
+        stop = subscribeSummaries(() => {
+          const list = getSummaries()
+          setSummaries(list)
+          if (list && !caughtUp) {
+            caughtUp = true
+            catchUp(list.map((group) => group.id))
+          }
+        })
+      },
+    )
     return () => {
       live = false
       stop?.()
@@ -37,6 +48,7 @@ function useGroupSummaries(): GroupSummary[] | null {
 export function HomeRoute() {
   const { t } = useI18n()
   const groups = useGroupSummaries()
+  const [joining, setJoining] = useState(false)
 
   // The hero is the same for everyone, so the build prerenders it as the first
   // paint (src/prerender.tsx). Everything below waits for the groups and
@@ -45,10 +57,26 @@ export function HomeRoute() {
     <Page title={t('app.name')} heading={t('app.name')} headingHidden>
       <section className={styles.hero}>
         <p className={styles.tagline}>{t('home.tagline')}</p>
-        <ButtonLink href="/new" variant="primary" icon={Plus}>
-          {t('home.newGroup')}
-        </ButtonLink>
+        <div className={styles.actions}>
+          <ButtonLink href="/new" variant="primary" icon={Plus}>
+            {t('home.newGroup')}
+          </ButtonLink>
+          <Button
+            icon={LinkIcon}
+            onClick={() => {
+              setJoining(true)
+            }}
+          >
+            {t('home.join')}
+          </Button>
+        </div>
       </section>
+      <JoinDialog
+        open={joining}
+        onClose={() => {
+          setJoining(false)
+        }}
+      />
 
       {groups && (
         <>

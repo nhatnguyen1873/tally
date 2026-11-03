@@ -2,7 +2,9 @@
 // Browsers never send the part after # to servers.
 
 import { GROUP_ID } from '../../shared/protocol.ts'
-import { SECRET } from './crypto.ts'
+
+/** The secret: 32 random bytes, base64url. */
+export const SECRET = /^[A-Za-z0-9_-]{43}$/
 
 export interface Invite {
   readonly groupId: string

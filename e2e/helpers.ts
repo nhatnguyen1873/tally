@@ -25,6 +25,11 @@ export async function createTrip(page: Page) {
     await page.getByLabel(`Person ${index + 2}`, { exact: true }).fill(name)
   }
   await page.getByRole('button', { name: 'Create group' }).click()
+  // The invite opens first, ready to send.
+  const invite = page.getByRole('dialog', { name: 'Invite people' })
+  await expect(invite).toBeVisible()
+  await invite.getByRole('button', { name: 'Close' }).click()
+  await expect(invite).toBeHidden()
   await expect(page.getByText('You’re settled up')).toBeVisible()
 }
 

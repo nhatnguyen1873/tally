@@ -1,0 +1,39 @@
+.sheet {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+/* Always a light square: scanners need dark modules on a light background. */
+.qr {
+  /* Small enough that the whole sheet fits on a short phone screen. */
+  width: min(100%, 15rem, 30dvh);
+  aspect-ratio: 1;
+  border-radius: var(--radius-m);
+  background: #fff;
+}
+
+.link {
+  width: 100%;
+  min-height: var(--tap-target);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-m);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  text-overflow: ellipsis;
+}
+
+.warning {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+.buttons {
+  display: grid;
+  gap: var(--space-3);
+}
