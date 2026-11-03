@@ -23,6 +23,7 @@
     "test:coverage": "vitest run --coverage",
     "test:relay": "vitest run --config vitest.relay.config.ts",
     "test:e2e": "playwright test",
+    "perf": "PERF=1 playwright test e2e/perf.spec.ts --project android --reporter line",
     "size": "node scripts/check-bundle-size.mjs",
     "lighthouse": "pnpm dlx @lhci/cli@0.15.1 autorun",
     "cf-typegen": "wrangler types",
