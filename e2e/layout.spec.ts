@@ -52,3 +52,62 @@ test('the end of each group screen scrolls clear of the tabs and the add button'
     }
   }
 })
+
+/**
+ * For each card list holding links: the radii of its rows' corners, next to the
+ * card's inner radius (its radius less its border).
+ */
+async function rowCorners(page: Page) {
+  // A string, so this file needs no DOM types.
+  return page.evaluate<{ inner: number; rows: number[][] }[]>(`
+    [...document.querySelectorAll('main ul, main ol')]
+      .filter((list) => list.querySelector(':scope > li > a'))
+      .map((list) => {
+        const card = getComputedStyle(list)
+        return {
+          inner: parseFloat(card.borderTopLeftRadius) - parseFloat(card.borderTopWidth),
+          rows: [...list.querySelectorAll(':scope > li > a')].map((row) => {
+            const style = getComputedStyle(row)
+            return [
+              style.borderTopLeftRadius,
+              style.borderTopRightRadius,
+              style.borderBottomLeftRadius,
+              style.borderBottomRightRadius,
+            ].map(parseFloat)
+          }),
+        }
+      })
+  `)
+}
+
+test('a row’s hover background stays inside its card’s rounded corners', async ({ page }) => {
+  await createTrip(page)
+  await addExpense(page, { amount: '1200000', title: 'Dinner', category: 'Food & drink' })
+  await addExpense(page, { amount: '160000', title: 'Taxi', category: 'Transport' })
+  const expenses = await rowCorners(page)
+  await page.goto('/')
+  await expect(page.getByRole('link', { name: /Đà Lạt trip/ })).toBeVisible()
+  const home = await rowCorners(page)
+
+  for (const [name, lists] of [
+    ['Expenses', expenses],
+    ['Home', home],
+  ] as const) {
+    expect(lists.length, `${name} has a list`).toBeGreaterThan(0)
+    for (const { inner, rows } of lists) {
+      expect(inner, `${name}: the card is rounded`).toBeGreaterThan(0)
+      rows.forEach(([topLeft, topRight, bottomLeft, bottomRight], index) => {
+        const top = index === 0 ? inner : 0
+        const bottom = index === rows.length - 1 ? inner : 0
+        expect([topLeft, topRight, bottomLeft, bottomRight], `${name}: row ${index + 1}`).toEqual([
+          top,
+          top,
+          bottom,
+          bottom,
+        ])
+      })
+    }
+  }
+  // Two expenses on the same day: one card, rounded only at its two ends.
+  expect(expenses.some(({ rows }) => rows.length === 2)).toBe(true)
+})

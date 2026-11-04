@@ -118,6 +118,22 @@
   border-top: 1px solid var(--color-border);
 }
 
+/* Rows run edge to edge in a card, so the first and last round their outer
+   corners to the card's inner curve: a hover background (and focus ring)
+   then follows the card instead of poking past its corners. Not clipped
+   with overflow, which would cut off the focus ring. */
+.card.list > li:first-child,
+.card.list > li:first-child > * {
+  border-start-start-radius: calc(var(--radius-l) - 1px);
+  border-start-end-radius: calc(var(--radius-l) - 1px);
+}
+
+.card.list > li:last-child,
+.card.list > li:last-child > * {
+  border-end-start-radius: calc(var(--radius-l) - 1px);
+  border-end-end-radius: calc(var(--radius-l) - 1px);
+}
+
 .stack {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
