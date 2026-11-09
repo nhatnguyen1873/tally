@@ -19,6 +19,9 @@ test('the Đà Lạt trip on four phones, one of them offline for a while', asyn
   page: minh,
   browser,
 }, testInfo) => {
+  // Four phones in one test, twice as slow on WebKit: on a busy machine it
+  // nears the 30 s default. Each step still waits at most 5 s.
+  test.slow()
   const invite = await createTrip(minh)
   const an = await phone(browser, testInfo)
   const linh = await phone(browser, testInfo)

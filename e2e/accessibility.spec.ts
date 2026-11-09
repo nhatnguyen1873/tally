@@ -41,6 +41,9 @@ async function checkEveryScreen(page: Page) {
 
 for (const colorScheme of ['light', 'dark'] as const) {
   test(`every screen passes axe at WCAG 2.2 AA (${colorScheme})`, async ({ page }) => {
+    // One of the longest tests, twice as slow on WebKit: on a busy machine it
+    // nears the 30 s default. Each step still waits at most 5 s.
+    test.slow()
     await page.emulateMedia({ colorScheme })
     await checkEveryScreen(page)
   })
