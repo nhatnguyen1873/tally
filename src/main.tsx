@@ -16,10 +16,22 @@ const RELOADED = 'tally:reloaded-for-update'
 
 // Leaving the page: WebKit then rejects the imports still loading, which
 // isn't a missing chunk, and a reload would override where the page is going.
-// (pagehide, not beforeunload, which can keep a page out of the back-forward
-// cache.)
+// WebKit rejects them as the navigation starts, right after beforeunload and
+// long before pagehide, so both mark the page as leaving. (beforeunload
+// doesn't keep a page out of the back-forward cache; unload would.) A
+// navigation can still stop without leaving (the Stop button), so the mark
+// from beforeunload lapses after a few seconds, long after those rejections.
 let leaving = false
+let lapse: ReturnType<typeof setTimeout> | undefined
+window.addEventListener('beforeunload', () => {
+  leaving = true
+  clearTimeout(lapse)
+  lapse = setTimeout(() => {
+    leaving = false
+  }, 3000)
+})
 window.addEventListener('pagehide', () => {
+  clearTimeout(lapse)
   leaving = true
 })
 window.addEventListener('pageshow', () => {

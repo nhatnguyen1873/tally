@@ -82,6 +82,43 @@ test('keeps focus on the prerendered screen when the app takes over', async ({ p
   await expect(newGroup).toBeFocused()
 })
 
+const SCREEN_CHUNK = /\/assets\/\w+Route-[\w-]+\.js$/
+
+test('goes where it was going when left while screens preload', async ({ page }) => {
+  // Hold the screens the app preloads once idle, so they're still loading
+  // when the page is left. WebKit rejects them as the navigation starts.
+  const held: Route[] = []
+  let released = false
+  await page.route(SCREEN_CHUNK, async (route) => {
+    if (released) await route.continue()
+    else held.push(route)
+  })
+  await page.goto('/')
+  await expect.poll(() => held.length).toBeGreaterThan(0)
+  released = true
+  // A reload for a "missing" chunk would interrupt this navigation.
+  await page.goto('/about')
+  await expect(page.getByRole('heading', { name: 'About Tally' })).toBeVisible()
+  expect(new URL(page.url()).pathname).toBe('/about')
+})
+
+test('reloads once when a deploy has replaced a screen it asks for', async ({ page }) => {
+  let gone = true
+  await page.route(SCREEN_CHUNK, async (route) => {
+    if (!gone) return route.continue()
+    gone = false
+    await route.fulfill({ status: 404 })
+  })
+  let loads = 0
+  page.on('load', () => loads++)
+  await page.goto('/')
+  await expect.poll(() => loads).toBe(2)
+  await expect(page.getByRole('link', { name: 'New group' })).toBeVisible()
+  await page.getByRole('link', { name: 'About Tally: privacy and how it works' }).click()
+  await expect(page.getByRole('heading', { name: 'About Tally' })).toBeVisible()
+  expect(loads).toBe(2)
+})
+
 test('starts in the saved theme and language', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('tally:prefs', JSON.stringify({ theme: 'dark', language: 'vi' }))
