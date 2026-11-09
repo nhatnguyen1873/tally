@@ -116,10 +116,15 @@ const whenIdle = (run: () => void) => {
 whenIdle(() => {
   // Production only: the dev server's modules change as they're edited.
   if (import.meta.env.PROD) registerServiceWorker()
-  preloadScreens()
-  try {
-    sessionStorage.removeItem(RELOADED)
-  } catch {
-    // Storage is unavailable; nothing to clean up.
-  }
+  // Only once every screen has arrived may a later missing chunk reload again.
+  // Cleared any sooner, a chunk still missing after the reload (WebKit even
+  // keeps the failed response) would reload the page over and over.
+  void preloadScreens().then((loaded) => {
+    if (!loaded || leaving) return
+    try {
+      sessionStorage.removeItem(RELOADED)
+    } catch {
+      // Storage is unavailable; nothing to clean up.
+    }
+  })
 })

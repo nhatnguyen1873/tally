@@ -119,6 +119,19 @@ test('reloads once when a deploy has replaced a screen it asks for', async ({ pa
   expect(loads).toBe(2)
 })
 
+test('reloads only once when a screen stays missing', async ({ page }) => {
+  await page.route(/\/assets\/NewGroupRoute-[\w-]+\.js$/, (route) => route.fulfill({ status: 404 }))
+  let loads = 0
+  page.on('load', () => loads++)
+  await page.goto('/')
+  await expect.poll(() => loads).toBe(2)
+  await expect(page.getByRole('link', { name: 'New group' })).toBeVisible()
+  // The reloaded page preloads the screens once idle (after 1 s in Safari),
+  // and fails again; it must not reload again.
+  await page.waitForTimeout(3000)
+  expect(loads).toBe(2)
+})
+
 test('starts in the saved theme and language', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('tally:prefs', JSON.stringify({ theme: 'dark', language: 'vi' }))

@@ -27,9 +27,16 @@ const PaymentFormRoute = lazy(screens.payment)
 const AboutRoute = lazy(screens.about)
 const NotFoundRoute = lazy(screens.notFound)
 
-/** Fetches every screen once the app is idle, so moving between them doesn't wait. */
-export function preloadScreens() {
-  for (const load of Object.values(screens)) void load()
+/**
+ * Fetches every screen once the app is idle, so moving between them doesn't
+ * wait. Resolves to whether every one of them arrived.
+ */
+export async function preloadScreens(): Promise<boolean> {
+  const loaded = await Promise.all(
+    Object.values(screens).map((load) => load().catch(() => undefined)),
+  )
+  // A failed import that main.tsx reloads for resolves to nothing.
+  return loaded.every(Boolean)
 }
 
 export function Routes() {
