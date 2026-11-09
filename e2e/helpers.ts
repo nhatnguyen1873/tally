@@ -4,6 +4,17 @@ import { type Browser, expect, type Page, type TestInfo } from '@playwright/test
 const WCAG_22_AA = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']
 
 export async function expectNoAxeViolations(page: Page, screen: string) {
+  // Let entrance animations finish first: mid-fade, a toast's text measures
+  // as low contrast. (Endless ones, like a loading pulse, never finish.) A
+  // string, so this file needs no DOM types.
+  await page.evaluate(`
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((animation) => Number.isFinite(animation.effect?.getComputedTiming().endTime))
+        .map((animation) => animation.finished.catch(() => undefined)),
+    )
+  `)
   const { violations } = await new AxeBuilder({ page }).withTags(WCAG_22_AA).analyze()
   const summary = violations.map((violation) => ({
     id: violation.id,
