@@ -252,6 +252,34 @@ describe('foldOps', () => {
     expect(state.rejected).toEqual([{ opId: oneTooMany.id, reason: 'too-many-members' }])
   })
 
+  it('counts only members who haven’t been removed toward the 50', () => {
+    const minh = new Device('minh')
+    const base = setup(minh)
+    const extra = Array.from({ length: 46 }, (_, i) =>
+      minh.op(MINH, 'member', id(`m${i}`), { name: `Friend ${i}` }),
+    )
+    const remove = minh.op(MINH, 'member', id('m0'), { deleted: true })
+    const replacement = minh.op(MINH, 'member', id('late'), { name: 'Late' })
+    const restore = minh.op(MINH, 'member', id('m0'), { deleted: false })
+    const removeAnother = minh.op(MINH, 'member', id('m1'), { deleted: true })
+    const restoreAgain = minh.op(MINH, 'member', id('m0'), { deleted: false })
+    const state = foldOps(GROUP_ID, [
+      ...base,
+      ...extra,
+      remove,
+      replacement,
+      restore,
+      removeAnother,
+      restoreAgain,
+    ])
+
+    expect(state.members.get(id('late'))?.name).toBe('Late')
+    // Restoring would have made 51; once someone else left, it fits.
+    expect(state.rejected).toEqual([{ opId: restore.id, reason: 'too-many-members' }])
+    expect(state.members.get(id('m0'))?.deleted).toBe(false)
+    expect([...state.members.values()].filter((member) => !member.deleted)).toHaveLength(50)
+  })
+
   it('waits for every required field before showing an entity', () => {
     const minh = new Device('minh')
     const base = setup(minh)

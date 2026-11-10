@@ -76,6 +76,7 @@ export const vi: Catalog = {
   'error.duplicateNames': 'Có hai người trùng tên. Hãy đặt khác nhau, ví dụ “An” và “An B”.',
   'error.tooLong': 'Tối đa {max} ký tự.',
   'error.nameTaken': 'Trong nhóm đã có người tên này.',
+  'error.groupFull': 'Một nhóm có tối đa {max} người.',
   'error.invite':
     'Đây không phải link mời Tally đầy đủ. Link mời kết thúc bằng dấu # và một đoạn mã dài.',
   'error.name': 'Hãy nhập tên.',

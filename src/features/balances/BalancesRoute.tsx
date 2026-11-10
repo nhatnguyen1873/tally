@@ -55,7 +55,11 @@ function BalancesScreen({ group }: { group: Group }) {
                     : t('balances.settled')}
               </span>
               <span className={groupStyles.rowDetail}>
-                {t('balances.detail', { paid: amount(row.paid), share: amount(row.share) })}
+                {/* As SPEC.md section 5.4 counts them, so paid minus share is the balance. */}
+                {t('balances.detail', {
+                  paid: amount(row.paid + row.sent),
+                  share: amount(row.share + row.received),
+                })}
               </span>
             </span>
           </li>

@@ -1,7 +1,15 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 
-import { type Hlc, hlcDecode, hlcEncode, hlcReceive, hlcTick } from './hlc.ts'
+import {
+  type Hlc,
+  hlcDecode,
+  hlcEncode,
+  hlcIsPlausible,
+  hlcReceive,
+  hlcTick,
+  LATEST_WALL,
+} from './hlc.ts'
 import { compareStrings } from './util.ts'
 
 const NODE_A = 'node-a----------'
@@ -89,10 +97,27 @@ describe('encoding', () => {
 })
 
 describe('limits', () => {
-  it('refuses to overflow the counter', () => {
-    expect(() => hlcTick({ wall: 1000, count: 999_999, node: NODE_A }, 1000, NODE_A)).toThrow(
-      RangeError,
-    )
+  it('moves to the next millisecond instead of overflowing the counter', () => {
+    const full = { wall: 1000, count: 999_999, node: NODE_A }
+    expect(hlcTick(full, 1000, NODE_A)).toEqual({ wall: 1001, count: 0, node: NODE_A })
+    expect(hlcReceive(undefined, { ...full, node: NODE_B }, 500, NODE_A)).toEqual({
+      wall: 1001,
+      count: 0,
+      node: NODE_A,
+    })
+    expect(hlcReceive(full, { ...full, node: NODE_B }, 500, NODE_A)).toEqual({
+      wall: 1001,
+      count: 0,
+      node: NODE_A,
+    })
+  })
+
+  it('counts on from the latest plausible clock without running out of room', () => {
+    const latest = { wall: LATEST_WALL, count: 999_999, node: NODE_B }
+    expect(hlcIsPlausible(latest)).toBe(true)
+    expect(hlcIsPlausible({ ...latest, wall: LATEST_WALL + 1 })).toBe(false)
+    const next = hlcReceive(undefined, latest, 1000, NODE_A)
+    expect(compareStrings(hlcEncode(next), hlcEncode(latest))).toBe(1)
   })
 
   it('refuses invalid nodes and times', () => {

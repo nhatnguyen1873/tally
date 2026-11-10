@@ -46,10 +46,17 @@ export function ButtonLink({
   wide,
   small,
   className,
+  state,
   children,
-}: Look & { href: string; className?: string; children: ReactNode }) {
+}: Look & {
+  href: string
+  className?: string
+  /** History state for the new entry. */
+  state?: object
+  children: ReactNode
+}) {
   return (
-    <Link href={href} className={classes({ variant, wide, small }, className)}>
+    <Link href={href} state={state} className={classes({ variant, wide, small }, className)}>
       {icon && <Icon icon={icon} />}
       <span>{children}</span>
     </Link>

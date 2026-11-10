@@ -137,16 +137,21 @@ export default function NewGroupRoute() {
             </div>
           ))}
           {shown && errors.others && <p className={fieldStyles.error}>{errors.others}</p>}
-          <div>
-            <Button
-              icon={UserPlus}
-              onClick={() => {
-                setOthers((list) => [...list, { key: nextKey.current++, name: '' }])
-              }}
-            >
-              {t('newGroup.addPerson')}
-            </Button>
-          </div>
+          {/* You and the others make the group, up to its limit. */}
+          {others.length < LIMITS.members - 1 ? (
+            <div>
+              <Button
+                icon={UserPlus}
+                onClick={() => {
+                  setOthers((list) => [...list, { key: nextKey.current++, name: '' }])
+                }}
+              >
+                {t('newGroup.addPerson')}
+              </Button>
+            </div>
+          ) : (
+            <p className={fieldStyles.hint}>{t('error.groupFull', { max: LIMITS.members })}</p>
+          )}
         </fieldset>
 
         <Button type="submit" variant="primary" wide disabled={saving}>

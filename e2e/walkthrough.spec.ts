@@ -51,6 +51,10 @@ test('the Đà Lạt trip ends with the transfers the spec promises', async ({ p
   await transfers.nth(0).getByRole('button', { name: 'Mark as paid' }).click()
   await expect(transfers).toHaveCount(2)
   await expect(page.getByText('An (you)').locator('..')).toContainText('settled up')
+  // What An paid counts the payment, so it matches An's share.
+  await expect(page.getByText('An (you)').locator('..')).toContainText(
+    'Paid ₫340,000 · Share ₫340,000',
+  )
 
   // Everything is still there after a reload: it's saved on the device.
   await page.reload()
@@ -126,6 +130,18 @@ test('searches, filters, deletes and restores', async ({ page }) => {
   await page.reload()
   await expect(page.getByRole('link', { name: /Taxi/ })).toBeVisible()
   await expect(page.getByRole('link', { name: /Phở Thìn/ })).toHaveCount(0)
+
+  // Opening an item and coming back, by saving or by the back link, keeps them.
+  await page.getByRole('link', { name: /Taxi/ }).click()
+  await page.getByLabel('Amount', { exact: true }).fill('170000')
+  await page.getByRole('button', { name: 'Save changes' }).click()
+  await expect(page.getByRole('link', { name: /Taxi.*170,000/ })).toBeVisible()
+  await expect(page.getByRole('link', { name: /Phở Thìn/ })).toHaveCount(0)
+  await expect(page).toHaveURL(/\?c=transport$/)
+  await page.getByRole('link', { name: /Taxi/ }).click()
+  await page.getByRole('link', { name: 'Back' }).click()
+  await expect(page.getByRole('link', { name: /Taxi/ })).toBeVisible()
+  await expect(page.getByRole('link', { name: /Phở Thìn/ })).toHaveCount(0)
   await page.getByRole('button', { name: 'Clear filters' }).click()
 
   await page.getByRole('link', { name: /Taxi/ }).click()
@@ -175,4 +191,36 @@ test('people can be added, renamed and removed', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Remove Hoa' }).click()
   await expect(page.getByRole('button', { name: 'Bring back Hoa' })).toBeVisible()
+})
+
+test('stops at 50 people, and says so', async ({ page }) => {
+  await page.goto('/new')
+  await page.getByLabel('Group name').fill('Big party')
+  await page.getByLabel('Your name').fill('Minh')
+  for (let number = 1; number <= 49; number++) {
+    if (number > 1) await page.getByRole('button', { name: 'Add another person' }).click()
+    await page.getByLabel(`Person ${number}`, { exact: true }).fill(`Guest ${number}`)
+  }
+  await expect(page.getByRole('button', { name: 'Add another person' })).toHaveCount(0)
+  await expect(page.getByText('A group can have at most 50 people.')).toBeVisible()
+  await page.getByRole('button', { name: 'Create group' }).click()
+  await page
+    .getByRole('dialog', { name: 'Invite people' })
+    .getByRole('button', { name: 'Close' })
+    .click()
+
+  await page.getByRole('link', { name: 'Group settings' }).click()
+  await page.getByLabel('Add a person').fill('Hoa')
+  await page.getByRole('button', { name: 'Add', exact: true }).click()
+  await expect(page.getByText('A group can have at most 50 people.')).toBeVisible()
+  await expect(page.getByLabel('Name for Hoa')).toHaveCount(0)
+
+  // Removing someone makes room.
+  await page.getByRole('button', { name: 'Remove Guest 49' }).click()
+  await page.getByRole('button', { name: 'Add', exact: true }).click()
+  await expect(page.getByLabel('Name for Hoa')).toBeVisible()
+  await page.getByRole('button', { name: 'Bring back Guest 49' }).click()
+  await expect(
+    page.getByRole('status').getByText('A group can have at most 50 people.'),
+  ).toBeVisible()
 })

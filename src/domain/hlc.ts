@@ -14,6 +14,12 @@ const WALL_DIGITS = 15
 const COUNT_DIGITS = 6
 const MAX_COUNT = 10 ** COUNT_DIGITS - 1
 const MAX_WALL = 10 ** WALL_DIGITS - 1
+/**
+ * The latest time an operation may carry: the last millisecond of the year
+ * 9999. Far beyond any real clock, yet so far below what the encoding holds
+ * that counting on from it can never run out of room.
+ */
+export const LATEST_WALL = Date.UTC(9999, 11, 31, 23, 59, 59, 999)
 const NODE = /^[A-Za-z0-9_-]{16,32}$/
 const ENCODED = /^(\d{15}):(\d{6}):([A-Za-z0-9_-]{16,32})$/
 
@@ -21,7 +27,7 @@ const ENCODED = /^(\d{15}):(\d{6}):([A-Za-z0-9_-]{16,32})$/
 export function hlcTick(previous: Hlc | undefined, now: number, node: string): Hlc {
   const wall = Math.max(previous?.wall ?? 0, now)
   const count = previous?.wall === wall ? previous.count + 1 : 0
-  return checked({ wall, count, node })
+  return checked(carry({ wall, count, node }))
 }
 
 /** The clock after seeing a remote event, so later local events sort after it. */
@@ -33,7 +39,7 @@ export function hlcReceive(previous: Hlc | undefined, remote: Hlc, now: number, 
   if (wall === localWall && wall === remote.wall) count = Math.max(localCount, remote.count) + 1
   else if (wall === localWall) count = localCount + 1
   else if (wall === remote.wall) count = remote.count + 1
-  return checked({ wall, count, node })
+  return checked(carry({ wall, count, node }))
 }
 
 export function hlcEncode(clock: Hlc): string {
@@ -46,6 +52,20 @@ export function hlcDecode(text: string): Hlc | null {
   const match = ENCODED.exec(text)
   if (!match) return null
   return { wall: Number(match[1]), count: Number(match[2]), node: match[3] ?? '' }
+}
+
+/** Whether an operation's clock is one a real device could have stamped. */
+export function hlcIsPlausible(clock: Hlc): boolean {
+  return clock.wall <= LATEST_WALL
+}
+
+/**
+ * A full counter moves on to the next millisecond, which still sorts after
+ * every clock the device has seen. A clock that came in already at its
+ * highest count would otherwise leave nothing to stamp next.
+ */
+function carry(clock: Hlc): Hlc {
+  return clock.count > MAX_COUNT ? { ...clock, wall: clock.wall + 1, count: 0 } : clock
 }
 
 function checked(clock: Hlc): Hlc {

@@ -1,4 +1,6 @@
 import type { Activity } from '../../domain/fold.ts'
+import { hasRoomForMember } from '../../domain/members.ts'
+import { LIMITS } from '../../domain/model.ts'
 import type { EntityKind } from '../../domain/ops.ts'
 import { useI18n } from '../../i18n/I18nProvider.tsx'
 import { Avatar } from '../../ui/Avatar.tsx'
@@ -45,6 +47,10 @@ export function ActivityEntry({
           small
           icon={Undo2}
           onClick={() => {
+            if (entry.entity === 'member' && !hasRoomForMember(group.store.getSnapshot().state)) {
+              toast({ text: t('error.groupFull', { max: LIMITS.members }) })
+              return
+            }
             void group.store
               .write([{ entity: entry.entity, key: entry.key, set: { deleted: false } }])
               .then(() => {

@@ -224,7 +224,7 @@ class Fold {
       case 'member':
         if (has('name') && !isValidText(set.name, LIMITS.memberName)) return 'invalid-name'
         if (has('deleted') && typeof set.deleted !== 'boolean') return 'invalid-deleted'
-        if (!this.exists('member', op.key) && this.created.member.length >= LIMITS.members) {
+        if (this.joinsMembers(op) && this.activeMembers() >= LIMITS.members) {
           return 'too-many-members'
         }
         return null
@@ -250,6 +250,22 @@ class Fold {
         if (has('deleted') && typeof set.deleted !== 'boolean') return 'invalid-deleted'
         return null
     }
+  }
+
+  /** Members not removed. Removed ones don't count toward the limit. */
+  private activeMembers(): number {
+    return this.created.member.filter(({ entry }) => entry.fields.get('deleted') !== true).length
+  }
+
+  /** Whether a member operation adds someone, or restores someone removed. */
+  private joinsMembers(op: Op): boolean {
+    const entry = this.entries.member.get(op.key)
+    const activeBefore = entry?.created === true && entry.fields.get('deleted') !== true
+    const named = Object.hasOwn(op.set, 'name') || entry?.fields.has('name') === true
+    const deleted = Object.hasOwn(op.set, 'deleted')
+      ? op.set.deleted === true
+      : entry?.fields.get('deleted') === true
+    return !activeBefore && named && !deleted
   }
 
   private exists(kind: EntityKind, key: string): boolean {

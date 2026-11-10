@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { foldOps } from './fold.ts'
-import { displayNames, isInvolved } from './members.ts'
+import { displayNames, hasRoomForMember, isInvolved } from './members.ts'
 import { Device, GROUP_ID, id, VND } from './testing.ts'
 
 const MINH = id('minh')
@@ -35,6 +35,28 @@ describe('displayNames', () => {
       [BAO]: 'Bảo',
       [LINH]: 'Linh',
     })
+  })
+  it('shows the one left plainly once the other with that name is removed', () => {
+    const { minh, ops } = group()
+    // Removing the first An, though the second is the one usually left over.
+    const state = foldOps(GROUP_ID, [...ops, minh.op(MINH, 'member', AN, { deleted: true })])
+    expect(displayNames(state.members).get(AN_TWO)).toBe('an')
+    expect(displayNames(state.members).get(AN)).toBe('An (2)')
+  })
+})
+
+describe('hasRoomForMember', () => {
+  it('allows 50 members, not counting removed ones', () => {
+    const { minh, ops } = group()
+    const more = Array.from({ length: 45 }, (_, i) =>
+      minh.op(MINH, 'member', id(`m${i}`), { name: `Friend ${i}` }),
+    )
+    expect(hasRoomForMember(foldOps(GROUP_ID, [...ops, ...more.slice(1)]))).toBe(true)
+    const full = foldOps(GROUP_ID, [...ops, ...more])
+    expect(full.members.size).toBe(50)
+    expect(hasRoomForMember(full)).toBe(false)
+    const removed = minh.op(MINH, 'member', LINH, { deleted: true })
+    expect(hasRoomForMember(foldOps(GROUP_ID, [...ops, ...more, removed]))).toBe(true)
   })
 })
 

@@ -79,6 +79,7 @@ export const en = {
     'Two people have the same name. Make them different, like “An” and “An B”.',
   'error.tooLong': 'Use at most {max} characters.',
   'error.nameTaken': 'Someone in the group already has that name.',
+  'error.groupFull': 'A group can have at most {max} people.',
   'error.invite': 'That isn’t a whole Tally invite link. It ends with # and a long code.',
   'error.name': 'Enter a name.',
   'error.amount': 'Enter an amount.',

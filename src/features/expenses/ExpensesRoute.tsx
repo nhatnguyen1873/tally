@@ -44,6 +44,9 @@ function Expenses({ group }: { group: Group }) {
     void group.store.update({ openedAt: Date.now() })
   }, [group.store])
 
+  // Forms opened from here come back to the list as it is now (see list-href.ts).
+  const listSearch = filtersToSearch(filters)
+
   const change = (patch: Partial<Filters>) => {
     navigate(`/g/${group.id}${filtersToSearch({ ...filters, ...patch })}`, { replace: true })
   }
@@ -56,6 +59,7 @@ function Expenses({ group }: { group: Group }) {
       floating={
         <ButtonLink
           href={`/g/${group.id}/e/new`}
+          state={{ listSearch }}
           variant="primary"
           icon={Plus}
           className={groupStyles.floating}
@@ -79,7 +83,9 @@ function Expenses({ group }: { group: Group }) {
           </Button>
         </EmptyState>
       ) : (
-        byDay(shown).map((day) => <Day key={day.date} group={group} {...day} />)
+        byDay(shown).map((day) => (
+          <Day key={day.date} group={group} listSearch={listSearch} {...day} />
+        ))
       )}
     </GroupTabsPage>
   )
@@ -213,7 +219,17 @@ function FilterBar({
   )
 }
 
-function Day({ group, date, items }: { group: Group; date: string; items: Item[] }) {
+function Day({
+  group,
+  listSearch,
+  date,
+  items,
+}: {
+  group: Group
+  listSearch: string
+  date: string
+  items: Item[]
+}) {
   const { day } = useI18n()
   return (
     <Section title={day(date)}>
@@ -221,9 +237,9 @@ function Day({ group, date, items }: { group: Group; date: string; items: Item[]
         {items.map((item) => (
           <li key={keyOf(item)}>
             {item.kind === 'expense' ? (
-              <ExpenseRow group={group} expense={item.expense} />
+              <ExpenseRow group={group} listSearch={listSearch} expense={item.expense} />
             ) : (
-              <PaymentRow group={group} payment={item.payment} />
+              <PaymentRow group={group} listSearch={listSearch} payment={item.payment} />
             )}
           </li>
         ))}
@@ -232,7 +248,15 @@ function Day({ group, date, items }: { group: Group; date: string; items: Item[]
   )
 }
 
-function ExpenseRow({ group, expense }: { group: Group; expense: Expense }) {
+function ExpenseRow({
+  group,
+  listSearch,
+  expense,
+}: {
+  group: Group
+  listSearch: string
+  expense: Expense
+}) {
   const { t, money } = useI18n()
   const { me, name } = group.people
   const amount = (value: number) => money(value, group.info.currency)
@@ -251,7 +275,11 @@ function ExpenseRow({ group, expense }: { group: Group; expense: Expense }) {
           : [t('expenses.justYou'), groupStyles.muted]
 
   return (
-    <Link href={`/g/${group.id}/e/${expense.id}`} className={groupStyles.row}>
+    <Link
+      href={`/g/${group.id}/e/${expense.id}`}
+      state={{ listSearch }}
+      className={groupStyles.row}
+    >
       <span className={groupStyles.rowIcon}>
         <Icon icon={CATEGORY_ICONS[expense.category]} />
       </span>
@@ -264,11 +292,23 @@ function ExpenseRow({ group, expense }: { group: Group; expense: Expense }) {
   )
 }
 
-function PaymentRow({ group, payment }: { group: Group; payment: Payment }) {
+function PaymentRow({
+  group,
+  listSearch,
+  payment,
+}: {
+  group: Group
+  listSearch: string
+  payment: Payment
+}) {
   const { t, money } = useI18n()
   const { subject, object } = group.people
   return (
-    <Link href={`/g/${group.id}/pay/${payment.id}`} className={groupStyles.row}>
+    <Link
+      href={`/g/${group.id}/pay/${payment.id}`}
+      state={{ listSearch }}
+      className={groupStyles.row}
+    >
       <span className={groupStyles.rowIcon}>
         <Icon icon={HandCoins} />
       </span>

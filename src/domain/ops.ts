@@ -1,4 +1,4 @@
-import { type Hlc, hlcDecode, hlcEncode } from './hlc.ts'
+import { type Hlc, hlcDecode, hlcEncode, hlcIsPlausible } from './hlc.ts'
 import { isId, type MemberId, randomId } from './ids.ts'
 import { hasOnlyKeys, isRecord } from './util.ts'
 
@@ -45,7 +45,9 @@ export function isOp(value: unknown): value is Op {
   if (!isRecord(value) || !hasOnlyKeys(value, OP_KEYS)) return false
   const { v, id, hlc, actor, by, entity, key, set } = value
   if (v !== 1 || !isId(id) || !isId(actor) || !isId(by) || !isId(key)) return false
-  if (typeof hlc !== 'string' || hlcDecode(hlc)?.node !== actor) return false
+  if (typeof hlc !== 'string') return false
+  const clock = hlcDecode(hlc)
+  if (clock?.node !== actor || !hlcIsPlausible(clock)) return false
   if (!isEntityKind(entity) || !isRecord(set)) return false
   return Object.keys(set).length > 0 && hasOnlyKeys(set, ENTITY_FIELDS[entity])
 }

@@ -15,6 +15,7 @@ import { Field, SelectField, TextField } from '../../ui/Field.tsx'
 import { Trash } from '../../ui/icons.ts'
 import { Page, pageStyles } from '../../ui/Page.tsx'
 import { useToast } from '../../ui/Toast.tsx'
+import { listHref } from '../expenses/list-href.ts'
 import { type Group, GroupGate } from '../group/group.tsx'
 import { cleanText } from '../group/people.ts'
 import { SplitEditor } from './SplitEditor.tsx'
@@ -34,7 +35,7 @@ function ExpenseScreen({ group }: { group: Group }) {
   const { expenseId } = useParams<{ expenseId?: string }>()
   const expense = expenseId ? group.state.expenses.get(expenseId) : undefined
   if (expenseId && (!expense || expense.deleted)) {
-    const back = `/g/${group.id}`
+    const back = listHref(group.id, history.state)
     return (
       <Page
         title={t('expense.missing')}
@@ -54,7 +55,8 @@ function ExpenseForm({ group, expense }: { group: Group; expense: Expense | null
   const toast = useToast()
   const form = useRef<HTMLFormElement>(null)
   const { people, info } = group
-  const back = `/g/${group.id}`
+  // Back to the list, with the filters it had when this was opened.
+  const [back] = useState(() => listHref(group.id, history.state))
 
   // Current members, and anyone the expense already involves even if removed since.
   const involved = expense ? [expense.paidBy, ...splitMembers(expense.split)] : []

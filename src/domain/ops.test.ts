@@ -32,6 +32,7 @@ describe('isOp', () => {
       { ...valid, actor: id('dev-other') },
       { ...valid, hlc: 'yesterday' },
       { ...valid, hlc: 42 },
+      { ...valid, hlc: `999999999999999:999999:${valid.actor}` },
       { ...valid, id: 'x' },
       { ...valid, by: 42 },
       { ...valid, key: '' },

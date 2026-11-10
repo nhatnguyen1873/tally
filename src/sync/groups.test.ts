@@ -136,6 +136,46 @@ describe('GroupStore', () => {
     expect(state.latestHlc && (op?.hlc ?? '') > state.latestHlc).toBe(true)
   })
 
+  it('still opens and writes after receiving a clock at its highest count', async () => {
+    const { id, store } = await trip()
+    const { record } = store.getSnapshot()
+    const full = { wall: Date.now() + 3_600_000, count: 999_999, node: 'other-phone-00000' }
+    const rename = makeOp(full, record.me ?? '', 'group', id, { name: 'Đà Lạt 2026' })
+    await store.receive([rename], 1)
+
+    const reopened = await GroupStore.load(id)
+    if (!reopened) throw new Error('group missing')
+    expect(reopened.getSnapshot().state.group?.name).toBe('Đà Lạt 2026')
+    const [op] = await addDinner(reopened)
+    expect((op?.hlc ?? '') > rename.hlc).toBe(true)
+  })
+
+  it('ignores an operation stamped beyond the year 9999, and still opens', async () => {
+    const { id, store } = await trip()
+    const { record } = store.getSnapshot()
+    const absurd = { wall: 10 ** 15 - 1, count: 999_999, node: 'other-phone-00000' }
+    const rename = makeOp(absurd, record.me ?? '', 'group', id, { name: 'Hijacked' })
+    await store.receive([rename], 1)
+    expect(store.getSnapshot().state.group?.name).toBe('Đà Lạt trip')
+
+    const reopened = await GroupStore.load(id)
+    if (!reopened) throw new Error('group missing')
+    expect(reopened.getSnapshot().state.group?.name).toBe('Đà Lạt trip')
+    const [op] = await addDinner(reopened)
+    expect(reopened.getSnapshot().state.expenses.get(op?.key ?? '')?.title).toBe('Dinner')
+  })
+
+  it('starts its clock afresh when the saved one is out of range', async () => {
+    const { id, store } = await trip()
+    const { record } = store.getSnapshot()
+    await saveOps({ ...record, clock: `${'9'.repeat(15)}:999999:${record.actor}` }, [])
+
+    const reopened = await GroupStore.load(id)
+    if (!reopened) throw new Error('group missing')
+    const [op] = await addDinner(reopened)
+    expect(reopened.getSnapshot().state.expenses.get(op?.key ?? '')?.title).toBe('Dinner')
+  })
+
   it('refuses to write before this device has chosen who it is', async () => {
     const { store } = await trip()
     await store.update({ me: null })

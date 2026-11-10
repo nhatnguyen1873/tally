@@ -32,7 +32,14 @@ export function WhoAreYou({
   const taken = people.all.some(
     (member) => member.name.toLowerCase() === cleanText(name).toLowerCase(),
   )
-  const error = !cleanText(name) ? t('error.yourName') : taken ? t('error.nameTaken') : null
+  const full = people.active.length >= LIMITS.members
+  const error = full
+    ? t('error.groupFull', { max: LIMITS.members })
+    : !cleanText(name)
+      ? t('error.yourName')
+      : taken
+        ? t('error.nameTaken')
+        : null
 
   async function join(event: SubmitEvent) {
     event.preventDefault()

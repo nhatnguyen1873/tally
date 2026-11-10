@@ -28,6 +28,8 @@ const MINUTE = 60_000
 /** What the relay remembers about one connection, across hibernation. */
 interface Session {
   readonly ip: string
+  /** When the connection opened. Missing on ones from before it was kept. */
+  readonly openedAt?: number
   readonly authed: boolean
   /** Start of the current rate-limit minute, and operations pushed in it. */
   readonly windowStart: number
@@ -40,13 +42,17 @@ async function tokenHash(token: string): Promise<string> {
   return toBase64url(new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(token))))
 }
 
+const isAuthed = (ws: WebSocket) => (ws.deserializeAttachment() as Session).authed
+const openedAt = (ws: WebSocket) => (ws.deserializeAttachment() as Session).openedAt ?? 0
+
 export class GroupLog extends DurableObject<Env> {
   override fetch(request: Request): Response {
-    const full = this.ctx.getWebSockets().length >= LIMITS.connectionsPerGroup
+    const full = !this.makeRoom()
     const { 0: client, 1: server } = new WebSocketPair()
     this.ctx.acceptWebSocket(server)
     const session: Session = {
       ip: request.headers.get(CLIENT_IP) ?? '',
+      openedAt: Date.now(),
       authed: false,
       windowStart: 0,
       windowCount: 0,
@@ -115,6 +121,10 @@ export class GroupLog extends DurableObject<Env> {
     }
     if (!this.tokenMatches(hash)) {
       this.fail(ws, 'unauthorized')
+      return
+    }
+    if (this.open().filter(isAuthed).length >= LIMITS.connectionsPerGroup) {
+      this.fail(ws, 'group_full', true)
       return
     }
 
@@ -188,10 +198,33 @@ export class GroupLog extends DurableObject<Env> {
     this.send(ws, { type: 'ack', acks })
     if (logged.length === 0) return
     for (const other of this.ctx.getWebSockets()) {
-      if (other !== ws && (other.deserializeAttachment() as Session).authed) {
+      if (other !== ws && isAuthed(other)) {
         this.send(other, { type: 'ops', ops: logged })
       }
     }
+  }
+
+  // --- Connections -------------------------------------------------------------
+
+  private open(): WebSocket[] {
+    return this.ctx.getWebSockets().filter((ws) => ws.readyState === WebSocket.READY_STATE_OPEN)
+  }
+
+  /**
+   * Whether a new connection fits. The limit counts devices that have proved
+   * they hold the link. Connections that haven't said hello make way for new
+   * ones, oldest first, so someone who knows only a group's ID can't keep its
+   * devices out by holding connections open.
+   */
+  private makeRoom(): boolean {
+    const open = this.open()
+    if (open.filter(isAuthed).length >= LIMITS.connectionsPerGroup) return false
+    if (open.length >= LIMITS.connectionsPerGroup) {
+      const waiting = open.filter((ws) => !isAuthed(ws))
+      const oldest = waiting.reduce((a, b) => (openedAt(b) < openedAt(a) ? b : a))
+      this.fail(oldest, 'group_full', true)
+    }
+    return true
   }
 
   // --- Storage -----------------------------------------------------------------

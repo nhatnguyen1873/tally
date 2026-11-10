@@ -257,15 +257,36 @@ describe('limits', () => {
   it('allows 50 connections per group', async () => {
     const groupId = newGroupId()
     const token = newToken()
-    const clients = await Promise.all(
-      Array.from({ length: LIMITS.connectionsPerGroup }, () => Client.connect(groupId)),
+    const { client: first } = await Client.join(groupId, token, 0, true)
+    const others = await Promise.all(
+      Array.from({ length: LIMITS.connectionsPerGroup - 1 }, () => Client.join(groupId, token)),
     )
     const extra = await Client.connect(groupId)
     expect(await extra.next()).toEqual({ type: 'error', code: 'group_full' })
     await extra.whenClosed()
     // The others still work.
-    clients[0]?.send({ type: 'hello', token, after: 0, create: true })
-    expect(await clients[0]?.next()).toMatchObject({ type: 'welcome' })
+    first.send({ type: 'push', ops: [fakeOp()] })
+    expect(await first.next()).toMatchObject({ type: 'ack' })
+    expect(await others[0]?.client.next()).toMatchObject({ type: 'ops' })
+  })
+
+  it('doesn’t let connections that never say hello keep devices out', async () => {
+    const groupId = newGroupId()
+    const token = newToken()
+    const { client: creator } = await Client.join(groupId, token, 0, true)
+    // The creator and these fill every place.
+    const idle: Client[] = []
+    for (let i = 1; i < LIMITS.connectionsPerGroup; i++) idle.push(await Client.connect(groupId))
+
+    // A new device takes the place of the connection that has waited longest.
+    const { welcome } = await Client.join(groupId, token)
+    expect(welcome).toMatchObject({ type: 'welcome' })
+    expect(await idle[0]?.next()).toEqual({ type: 'error', code: 'group_full' })
+    await idle[0]?.whenClosed()
+    expect(idle[1]?.closed).toBe(false)
+    // The creator was never in danger.
+    creator.send({ type: 'push', ops: [fakeOp()] })
+    expect(await creator.next()).toMatchObject({ type: 'ack' })
   })
 })
 

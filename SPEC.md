@@ -97,7 +97,7 @@ App-wide: a sync status indicator, Undo toasts, a "New version ready · Reload" 
 ### 5.1 Groups and members
 
 - **Group:** name (1–60 characters) and currency. The currency is stored as an ISO 4217 code plus its number of minor digits, so every device reads amounts the same way. It can change only while the group has no expenses or payments. A change that lands after one in the log (possible offline) is ignored.
-- **Members:** name (1–30 characters, unique within the group, ignoring case); 2–50 per group.
+- **Members:** name (1–30 characters, unique within the group, ignoring case); 2–50 per group. Removed members don't count toward the 50, and bringing one back needs a free place.
 - **Identity:** each device picks "who am I" per group, and the choice is stored only on that device. You must pick before adding anything. Several devices can act as the same person. If your member is removed, Tally asks again.
 - **Duplicate names:** if two people add the same name while offline, both appear (the second as "An (2)"), and the unused one can be removed.
 - **Removed but involved:** a removed member who still appears in an expense (possible after concurrent offline edits) stays in balances, is labeled "removed", and can be restored.
@@ -173,7 +173,7 @@ Creating an item sets all of its required fields, deleting it sets `deleted: tru
 
 - **Same state everywhere:** every device sorts all operations by their clock and folds them in that order. Each field takes its value from the latest valid operation that set it. The same operations give the same state on every device, whatever order they arrived in.
 - **Money stays consistent:** `money` is a single field, so concurrent edits can never leave a split that doesn't match its amount.
-- **Validation:** any link holder can write, so the fold checks every operation (types, lengths, sums, member references). Invalid operations are ignored but kept.
+- **Validation:** any link holder can write, so the fold checks every operation (types, lengths, sums, member references, and a clock no later than the year 9999). Invalid operations are ignored but kept.
 - **Activity feed:** the feed comes from the same fold. Each operation is compared with the state before it to produce "added", "changed amount from … to …", "deleted" or "restored".
 - **Clocks:** hybrid logical clocks tolerate normal clock drift. The relay sends its time on connect, and the app warns when the device clock is more than 5 minutes off.
 
@@ -207,7 +207,7 @@ The protocol runs over a WebSocket at `/api/g/:groupId/ws`.
 - **Worker:** one Cloudflare Worker serves the built app (static assets with a single-page fallback). It validates the group ID format, then routes `/api/g/:groupId/ws` to that group's Durable Object.
 - **Durable Object:** keeps the log in its SQLite storage and uses the WebSocket Hibernation API, so idle groups cost nothing.
 - **Retention:** every connection moves the group's deletion alarm to 12 months out. When the alarm fires, the Durable Object deletes all of its storage.
-- **Abuse limits:** besides the per-group limits in section 2, Cloudflare's rate-limiting binding caps each IP address at 300 connections and 60 new groups a minute, per Cloudflare location. The caps are generous because many phones share an address behind mobile carriers' NAT.
+- **Abuse limits:** the 50 connections per group count only devices that have sent a valid token; a connection that hasn't yet makes way for a new one, oldest first, so knowing a group's ID isn't enough to keep its devices out. Besides the per-group limits in section 2, Cloudflare's rate-limiting binding caps each IP address at 300 connections and 60 new groups a minute, per Cloudflare location. The caps are generous because many phones share an address behind mobile carriers' NAT.
 - **Local development:** `@cloudflare/vite-plugin` runs the same Worker and Durable Object inside `vite dev`, so one command starts everything.
 
 ## 7. Offline and PWA

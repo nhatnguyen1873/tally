@@ -1,6 +1,13 @@
 import { balances } from '../domain/balances.ts'
 import { foldOps, type GroupState } from '../domain/fold.ts'
-import { type Hlc, hlcDecode, hlcEncode, hlcReceive, hlcTick } from '../domain/hlc.ts'
+import {
+  type Hlc,
+  hlcDecode,
+  hlcEncode,
+  hlcIsPlausible,
+  hlcReceive,
+  hlcTick,
+} from '../domain/hlc.ts'
 import { randomId } from '../domain/ids.ts'
 import type { Currency } from '../domain/money.ts'
 import { type EntityKind, makeOp, type Op } from '../domain/ops.ts'
@@ -205,7 +212,10 @@ export class GroupStore {
 
 /** Continues after this device's own clock and after every operation it holds. */
 function startingClock(record: GroupRecord, state: GroupState): Hlc | undefined {
-  const own = record.clock ? (hlcDecode(record.clock) ?? undefined) : undefined
+  const decoded = record.clock ? hlcDecode(record.clock) : null
+  // A clock that a far-future operation dragged out of range (before such
+  // operations were refused) would stamp operations everyone refuses.
+  const own = decoded && hlcIsPlausible(decoded) ? decoded : undefined
   const latest = state.latestHlc ? hlcDecode(state.latestHlc) : null
   if (!latest || latest.node === record.actor) return own
   return hlcReceive(own, latest, Date.now(), record.actor)

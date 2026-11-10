@@ -3,7 +3,7 @@ import { useLocation } from 'wouter'
 
 import type { Member } from '../../domain/fold.ts'
 import { randomId } from '../../domain/ids.ts'
-import { displayNames, isInvolved } from '../../domain/members.ts'
+import { displayNames, hasRoomForMember, isInvolved } from '../../domain/members.ts'
 import { CATEGORIES, LIMITS } from '../../domain/model.ts'
 import { currencyFromCode } from '../../domain/money.ts'
 import { Preferences } from '../../app/Preferences.tsx'
@@ -246,6 +246,11 @@ function MemberRow({ group, member }: { group: Group; member: Member }) {
   }
 
   async function setRemoved(deleted: boolean) {
+    // Bringing someone back makes them a member again, within the limit.
+    if (!deleted && !hasRoomForMember(store.getSnapshot().state)) {
+      toast({ text: t('error.groupFull', { max: LIMITS.members }) })
+      return
+    }
     await store.write([{ entity: 'member', key: member.id, set: { deleted } }])
     if (deleted) {
       toast({
@@ -308,11 +313,13 @@ function AddPerson({ group }: { group: Group }) {
   const toast = useToast()
   const [name, setName] = useState('')
   const [tried, setTried] = useState(false)
-  const error = !cleanText(name)
-    ? t('error.name')
-    : nameTaken(group, name)
-      ? t('error.nameTaken')
-      : null
+  const error = !hasRoomForMember(group.state)
+    ? t('error.groupFull', { max: LIMITS.members })
+    : !cleanText(name)
+      ? t('error.name')
+      : nameTaken(group, name)
+        ? t('error.nameTaken')
+        : null
 
   async function add(event: SubmitEvent) {
     event.preventDefault()

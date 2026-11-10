@@ -12,6 +12,7 @@ import { Field, SelectField, TextField } from '../../ui/Field.tsx'
 import { Trash } from '../../ui/icons.ts'
 import { Page, pageStyles } from '../../ui/Page.tsx'
 import { useToast } from '../../ui/Toast.tsx'
+import { listHref } from '../expenses/list-href.ts'
 import { type Group, GroupGate } from '../group/group.tsx'
 
 // An item's history sits below its form; load it after the form.
@@ -28,7 +29,7 @@ function PaymentScreen({ group }: { group: Group }) {
   const { paymentId } = useParams<{ paymentId?: string }>()
   const payment = paymentId ? group.state.payments.get(paymentId) : undefined
   if (paymentId && (!payment || payment.deleted)) {
-    const back = `/g/${group.id}`
+    const back = listHref(group.id, history.state)
     return (
       <Page
         title={t('payment.missing')}
@@ -51,7 +52,9 @@ function PaymentForm({ group, payment }: { group: Group; payment: Payment | null
 
   // Settle-up's "Other amount" opens this prefilled: ?from=&to=&amount=&back=balances
   const prefill = new URLSearchParams(useSearch())
-  const back = prefill.get('back') === 'balances' ? `/g/${group.id}/balances` : `/g/${group.id}`
+  // Back to Balances, or to the list with the filters it had when this was opened.
+  const [list] = useState(() => listHref(group.id, history.state))
+  const back = prefill.get('back') === 'balances' ? `/g/${group.id}/balances` : list
   const members = people.all.filter(
     (member) => !member.deleted || member.id === payment?.from || member.id === payment?.to,
   )
