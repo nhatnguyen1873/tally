@@ -26,8 +26,11 @@
   color: var(--color-on-accent);
 }
 
-.primary:hover:not(:disabled) {
-  background: var(--color-accent-hover);
+/* Only where a pointer can hover: a touch would leave it stuck on. */
+@media (hover: hover) {
+  .primary:hover:not(:disabled) {
+    background: var(--color-accent-hover);
+  }
 }
 
 .secondary {
@@ -36,8 +39,10 @@
   color: var(--color-text);
 }
 
-.secondary:hover:not(:disabled) {
-  background: var(--color-surface-2);
+@media (hover: hover) {
+  .secondary:hover:not(:disabled) {
+    background: var(--color-surface-2);
+  }
 }
 
 .quiet {
@@ -46,8 +51,10 @@
   color: var(--color-accent-strong);
 }
 
-.quiet:hover:not(:disabled) {
-  background: var(--color-accent-soft);
+@media (hover: hover) {
+  .quiet:hover:not(:disabled) {
+    background: var(--color-accent-soft);
+  }
 }
 
 .danger {
@@ -56,8 +63,10 @@
   color: var(--color-negative);
 }
 
-.danger:hover:not(:disabled) {
-  background: var(--color-negative-soft);
+@media (hover: hover) {
+  .danger:hover:not(:disabled) {
+    background: var(--color-negative-soft);
+  }
 }
 
 .wide {
@@ -84,6 +93,8 @@
   cursor: pointer;
 }
 
-.iconButton:hover {
-  background: var(--color-surface-2);
+@media (hover: hover) {
+  .iconButton:hover {
+    background: var(--color-surface-2);
+  }
 }

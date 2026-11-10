@@ -90,8 +90,11 @@
   text-decoration: none;
 }
 
-a.row:hover {
-  background: var(--color-surface-2);
+/* Only where a pointer can hover: a touch would leave it stuck on. */
+@media (hover: hover) {
+  a.row:hover {
+    background: var(--color-surface-2);
+  }
 }
 
 .rowIcon {

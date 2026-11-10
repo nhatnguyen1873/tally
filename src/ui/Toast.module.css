@@ -46,9 +46,12 @@
   color: inherit;
 }
 
-.dismiss:hover,
-.action:hover {
-  background: rgb(255 255 255 / 0.12);
+/* Only where a pointer can hover: a touch would leave it stuck on. */
+@media (hover: hover) {
+  .dismiss:hover,
+  .action:hover {
+    background: rgb(255 255 255 / 0.12);
+  }
 }
 
 @keyframes rise {
