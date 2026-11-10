@@ -10,6 +10,8 @@
 .input,
 .select {
   width: 100%;
+  /* A grid item won't shrink below its content's width without this. */
+  min-width: 0;
   min-height: 3rem;
   padding: 0 var(--space-3);
   border: 1px solid var(--color-border-strong);
@@ -34,6 +36,24 @@
   background-size:
     0.35rem 0.35rem,
     0.35rem 0.35rem;
+}
+
+/* iOS draws date fields with a native look that ignores box-sizing, so the
+   padding and border spill past width: 100% and off the screen. A plain look
+   keeps the field inside its column; tapping still opens the date picker.
+   The query matches only iOS and iPadOS; elsewhere date fields keep their
+   own look and calendar button. */
+@supports (-webkit-touch-callout: none) {
+  .input[type='date'] {
+    -webkit-appearance: none;
+    appearance: none;
+    text-align: start;
+  }
+
+  .input[type='date']::-webkit-date-and-time-value {
+    margin: 0;
+    text-align: start;
+  }
 }
 
 .input::placeholder {
