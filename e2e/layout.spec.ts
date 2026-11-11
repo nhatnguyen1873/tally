@@ -111,3 +111,33 @@ test('a row’s hover background stays inside its card’s rounded corners', asy
   // Two expenses on the same day: one card, rounded only at its two ends.
   expect(expenses.some(({ rows }) => rows.length === 2)).toBe(true)
 })
+
+test('a settings button stays beside its field when an error shows', async ({ page }) => {
+  await createTrip(page)
+  await page.getByRole('link', { name: 'Group settings' }).click()
+  const middle = async (locator: Locator) => {
+    const found = await locator.boundingBox()
+    if (!found) throw new Error(`Not on screen: ${locator.toString()}`)
+    return found.y + found.height / 2
+  }
+  const forms = [
+    {
+      field: page.getByLabel('Add a person'),
+      button: page.getByRole('button', { name: 'Add', exact: true }),
+      error: 'Enter a name.',
+      showError: () => page.getByRole('button', { name: 'Add', exact: true }).click(),
+    },
+    {
+      field: page.getByLabel('Group name'),
+      button: page.getByRole('button', { name: 'Save', exact: true }),
+      error: 'Give the group a name.',
+      showError: () => page.getByLabel('Group name').fill(''),
+    },
+  ]
+  for (const { field, button, error, showError } of forms) {
+    expect(Math.abs((await middle(button)) - (await middle(field)))).toBeLessThanOrEqual(1)
+    await showError()
+    await expect(page.getByText(error)).toBeVisible()
+    expect(Math.abs((await middle(button)) - (await middle(field)))).toBeLessThanOrEqual(1)
+  }
+})
