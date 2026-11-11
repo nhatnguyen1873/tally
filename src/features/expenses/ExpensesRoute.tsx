@@ -47,8 +47,19 @@ function Expenses({ group }: { group: Group }) {
   // Forms opened from here come back to the list as it is now (see list-href.ts).
   const listSearch = filtersToSearch(filters)
 
+  // Each filter choice is a step that Back undoes. A search is one step, not
+  // one per letter: starting it and clearing it add steps, and the letters
+  // typed in between replace the current one.
   const change = (patch: Partial<Filters>) => {
-    navigate(`/g/${group.id}${filtersToSearch({ ...filters, ...patch })}`, { replace: true })
+    const next = { ...filters, ...patch }
+    const search = filtersToSearch(next)
+    if (search === listSearch) return
+    const editingQuery =
+      Object.keys(patch).length === 1 &&
+      'query' in patch &&
+      filters.query !== '' &&
+      next.query !== ''
+    navigate(`/g/${group.id}${search}`, { replace: editingQuery })
   }
 
   return (

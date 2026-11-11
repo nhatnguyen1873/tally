@@ -1,0 +1,26 @@
+.currency {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.legend {
+  margin-bottom: var(--space-2);
+  padding: 0;
+  font-weight: 600;
+}
+
+.search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* The status is empty until there's a search, and then takes no room. It
+   stays in the page so screen readers announce it when it fills in. */
+.search > p:not(:empty) {
+  margin-top: var(--space-2);
+}

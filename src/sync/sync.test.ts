@@ -531,6 +531,40 @@ describe('the connection', () => {
     expect(relay.sockets.size).toBe(2)
   })
 
+  it('waits without connecting while offline, and connects once back online', async () => {
+    const relay = new FakeRelay()
+    const minh = await phone(relay)
+    const { id } = await createTrip(minh)
+    const connect = vi.spyOn(minh.network, 'connect')
+    minh.network.setOnline(false)
+    const sync = minh.sync(id)
+    await until(() => sync.getStatus().pending === 5, 'five changes waiting')
+    minh.network.setOnline(false) // Still offline, and not connected: nothing to drop.
+    expect(sync.getStatus()).toMatchObject({ state: 'offline', pending: 5 })
+    expect(connect).not.toHaveBeenCalled()
+    minh.network.setOnline(true)
+    await until(() => sync.getStatus().state === 'synced', 'synced')
+    expect(connect).toHaveBeenCalledOnce()
+  })
+
+  it('stops while waiting to retry, without trying again', async () => {
+    const relay = new FakeRelay()
+    const minh = await phone(relay)
+    const { id } = await createTrip(minh)
+    const { GroupSync } = await import('./engine.ts')
+    const sync = new GroupSync(id, minh.network, () => 1000)
+    devices.push(sync)
+    relay.down = true
+    sync.start()
+    await until(() => relay.sockets.size === 1, 'a failed try')
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    sync.stop()
+    relay.down = false
+    minh.network.setOnline(true) // A wake after stopping doesn't reconnect either.
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(relay.sockets.size).toBe(1)
+  })
+
   it('stops uploading when the relay can’t take an operation or the group is full', async () => {
     for (const code of ['too_large', 'group_full'] as const) {
       const { relay, minh, id, sync } = await synced()
@@ -588,6 +622,21 @@ describe('joining, when things go wrong', () => {
     const download = an.join(id, secret)
     relay.sendRaw(id, 'junk')
     expect(await download).toBe('joined')
+  })
+})
+
+describe('joining, while the relay says nothing', () => {
+  it('ignores junk, then gives up after the timeout', async () => {
+    const relay = new FakeRelay()
+    const minh = await phone(relay)
+    const { id, secret } = await createTrip(minh)
+    const an = await phone(relay)
+    relay.silent = true
+    const joining = an.join(id, secret, 100)
+    await until(() => relay.sockets.size === 1, 'connecting')
+    relay.sendRaw(id, 'junk')
+    expect(await joining).toBe('unreachable')
+    expect(await an.groups.groupStore(id)).toBeNull()
   })
 })
 
@@ -662,9 +711,17 @@ describe('storage', () => {
     const relay = new FakeRelay()
     const minh = await phone(relay)
     await createTrip(minh)
-    const newer = await openDB('tally', 3)
-    expect(newer.version).toBe(3)
-    newer.close()
+    // In a browser, the page then reloads into the new version.
+    const reload = vi.fn()
+    vi.stubGlobal('location', { reload })
+    try {
+      const newer = await openDB('tally', 3)
+      expect(newer.version).toBe(3)
+      newer.close()
+      expect(reload).toHaveBeenCalledOnce()
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 
   it('marks only operations it has, once', async () => {

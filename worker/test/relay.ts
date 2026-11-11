@@ -46,9 +46,10 @@ export class Client {
     })
   }
 
-  static async connect(groupId: string): Promise<Client> {
+  /** Opens a connection, from `ip` when given (as Cloudflare reports it). */
+  static async connect(groupId: string, ip?: string): Promise<Client> {
     const response = await exports.default.fetch(`https://tally.test/api/g/${groupId}/ws`, {
-      headers: { Upgrade: 'websocket' },
+      headers: ip ? { Upgrade: 'websocket', 'CF-Connecting-IP': ip } : { Upgrade: 'websocket' },
     })
     const ws = response.webSocket
     if (!ws) throw new Error(`No WebSocket: ${response.status}`)

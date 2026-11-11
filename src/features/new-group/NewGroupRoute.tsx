@@ -6,10 +6,11 @@ import { currencyFromCode } from '../../domain/money.ts'
 import { useI18n } from '../../i18n/I18nProvider.tsx'
 import { createGroup } from '../../sync/groups.ts'
 import { Button, IconButton } from '../../ui/Button.tsx'
-import { fieldStyles, SelectField, TextField } from '../../ui/Field.tsx'
+import { fieldStyles, TextField } from '../../ui/Field.tsx'
 import { UserPlus, X } from '../../ui/icons.ts'
 import { Page, pageStyles } from '../../ui/Page.tsx'
 import { currencyOptions, defaultCurrency } from '../group/currencies.ts'
+import { CurrencyField } from '../group/CurrencyField.tsx'
 import { cleanText } from '../group/people.ts'
 import styles from './NewGroupRoute.module.css'
 
@@ -91,7 +92,7 @@ export default function NewGroupRoute() {
           autoComplete="off"
           error={shown ? errors.name : null}
         />
-        <SelectField
+        <CurrencyField
           label={t('newGroup.currency')}
           value={currency}
           options={options}

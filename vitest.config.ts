@@ -11,7 +11,15 @@ export default defineConfig({
       include: ['src/domain/**/*.ts', 'src/sync/**/*.ts', 'shared/**/*.ts'],
       exclude: ['**/*.test.ts', 'src/domain/testing.ts', 'src/sync/fake-relay.ts'],
       reporter: ['text-summary', 'text', 'html'],
-      thresholds: { lines: 95, functions: 95, branches: 95, statements: 95 },
+      // SPEC.md section 13: at least 95% of each folder, not just overall.
+      thresholds: {
+        lines: 95,
+        functions: 95,
+        branches: 95,
+        statements: 95,
+        'src/domain/**': { lines: 95, functions: 95, branches: 95, statements: 95 },
+        'src/sync/**': { lines: 95, functions: 95, branches: 95, statements: 95 },
+      },
     },
   },
 })

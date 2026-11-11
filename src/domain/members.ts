@@ -40,7 +40,16 @@ export function isInvolved(state: GroupState, memberId: MemberId): boolean {
 
 /** Whether one more member fits. Removed members don't count (SPEC.md section 5.1). */
 export function hasRoomForMember(state: GroupState): boolean {
+  return activeMembers(state) < LIMITS.members
+}
+
+/** Whether removing someone still leaves the group its 2 people (SPEC.md section 5.1). */
+export function canRemoveMember(state: GroupState): boolean {
+  return activeMembers(state) > LIMITS.minMembers
+}
+
+function activeMembers(state: GroupState): number {
   let active = 0
   for (const member of state.members.values()) if (!member.deleted) active++
-  return active < LIMITS.members
+  return active
 }

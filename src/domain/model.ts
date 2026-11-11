@@ -21,6 +21,8 @@ export const LIMITS = {
   memberName: 30,
   title: 80,
   members: 50,
+  /** Fewest current members a group can be left with by removing someone. */
+  minMembers: 2,
 } as const
 
 /** Amount, payer and split change together, so a split always matches its amount. */

@@ -31,7 +31,7 @@ export async function createTrip(page: Page): Promise<string> {
   await page.goto('/')
   await page.getByRole('link', { name: 'New group' }).click()
   await page.getByLabel('Group name').fill('Đà Lạt trip')
-  await page.getByLabel('Currency').selectOption('VND')
+  await page.getByLabel('Currency', { exact: true }).selectOption('VND')
   await page.getByLabel('Your name').fill('Minh')
   await page.getByLabel('Person 1', { exact: true }).fill('An')
   for (const [index, name] of ['Linh', 'Bảo'].entries()) {

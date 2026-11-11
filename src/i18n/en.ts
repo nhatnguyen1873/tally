@@ -71,6 +71,9 @@ export const en = {
   'newGroup.removePerson': 'Remove person {number}',
   'newGroup.create': 'Create group',
   'newGroup.currencyOption': '{code} · {name}',
+  'currency.search': 'Find a currency',
+  'currency.matches': { one: '{count} currency matches', other: '{count} currencies match' },
+  'currency.noMatch': 'No currency matches “{query}”.',
 
   'error.groupName': 'Give the group a name.',
   'error.yourName': 'Enter your name.',
@@ -299,6 +302,7 @@ export const en = {
   'settings.restorePerson': 'Bring back {name}',
   'settings.cantRemove': 'In an expense or payment, so they stay.',
   'settings.removed': 'Removed',
+  'settings.minPeople': 'A group needs at least {min} people.',
   'settings.addPerson': 'Add a person',
   'settings.personAdded': '{name} added',
   'settings.personRemoved': '{name} removed',

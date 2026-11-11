@@ -3,7 +3,12 @@ import { useLocation } from 'wouter'
 
 import type { Member } from '../../domain/fold.ts'
 import { randomId } from '../../domain/ids.ts'
-import { displayNames, hasRoomForMember, isInvolved } from '../../domain/members.ts'
+import {
+  canRemoveMember,
+  displayNames,
+  hasRoomForMember,
+  isInvolved,
+} from '../../domain/members.ts'
 import { CATEGORIES, LIMITS } from '../../domain/model.ts'
 import { currencyFromCode } from '../../domain/money.ts'
 import { Preferences } from '../../app/Preferences.tsx'
@@ -18,6 +23,7 @@ import { Download, Share2, Trash, Undo2, UserPlus } from '../../ui/icons.ts'
 import { Page, pageStyles, Section } from '../../ui/Page.tsx'
 import { useToast } from '../../ui/Toast.tsx'
 import { currencyOptions } from '../group/currencies.ts'
+import { CurrencyField } from '../group/CurrencyField.tsx'
 import {
   type Group,
   GroupGate,
@@ -112,7 +118,7 @@ function SettingsScreen({ group }: { group: Group }) {
             {t('action.save')}
           </Button>
         </form>
-        <SelectField
+        <CurrencyField
           label={t('settings.currency')}
           value={info.currency.code}
           options={options}
@@ -230,6 +236,8 @@ function MemberRow({ group, member }: { group: Group; member: Member }) {
   const [name, setName] = useState(member.name)
   const { people, store } = group
   const involved = isInvolved(group.state, member.id)
+  // Only current members can be removed, and a group keeps at least 2 people.
+  const lastTwo = !member.deleted && !canRemoveMember(group.state)
   const display = people.name(member.id)
   const error = !cleanText(name)
     ? t('error.name')
@@ -249,6 +257,10 @@ function MemberRow({ group, member }: { group: Group; member: Member }) {
     // Bringing someone back makes them a member again, within the limit.
     if (!deleted && !hasRoomForMember(store.getSnapshot().state)) {
       toast({ text: t('error.groupFull', { max: LIMITS.members }) })
+      return
+    }
+    if (deleted && !canRemoveMember(store.getSnapshot().state)) {
+      toast({ text: t('settings.minPeople', { min: LIMITS.minMembers }) })
       return
     }
     await store.write([{ entity: 'member', key: member.id, set: { deleted } }])
@@ -279,7 +291,9 @@ function MemberRow({ group, member }: { group: Group; member: Member }) {
                 ? t('person.youSuffix', { name: display })
                 : involved
                   ? t('settings.cantRemove')
-                  : undefined
+                  : lastTwo
+                    ? t('settings.minPeople', { min: LIMITS.minMembers })
+                    : undefined
           }
         />
         {edited && (
@@ -296,6 +310,7 @@ function MemberRow({ group, member }: { group: Group; member: Member }) {
         />
       ) : (
         !involved &&
+        !lastTwo &&
         member.id !== people.me && (
           <IconButton
             icon={Trash}

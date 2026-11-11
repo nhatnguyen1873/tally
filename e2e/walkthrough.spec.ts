@@ -127,6 +127,18 @@ test('searches, filters, deletes and restores', async ({ page }) => {
   await page.getByText('Filters').click()
   await page.getByLabel('Category').selectOption({ label: 'Transport' })
   await expect(page.getByRole('link', { name: /Phở Thìn/ })).toHaveCount(0)
+
+  // Back undoes each filter step: the category, then clearing the search.
+  await page.goBack()
+  await expect(page).not.toHaveURL(/\?/)
+  await expect(page.getByRole('link', { name: /Phở Thìn/ })).toBeVisible()
+  await page.goBack()
+  await expect(page).toHaveURL(/\?q=pho$/)
+  await expect(page.getByRole('searchbox', { name: 'Search expenses' })).toHaveValue('pho')
+  await page.goForward()
+  await expect(page).not.toHaveURL(/\?/)
+  await page.goForward()
+  await expect(page).toHaveURL(/\?c=transport$/)
   await page.reload()
   await expect(page.getByRole('link', { name: /Taxi/ })).toBeVisible()
   await expect(page.getByRole('link', { name: /Phở Thìn/ })).toHaveCount(0)
@@ -191,6 +203,62 @@ test('people can be added, renamed and removed', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Remove Hoa' }).click()
   await expect(page.getByRole('button', { name: 'Bring back Hoa' })).toBeVisible()
+})
+
+test('finds a currency by name or code', async ({ page }) => {
+  await page.goto('/new')
+  const currency = page.getByLabel('Currency', { exact: true })
+  const search = page.getByLabel('Find a currency')
+  await expect(currency).toHaveValue('USD')
+
+  await search.fill('baht')
+  await expect(page.getByText('1 currency matches')).toBeVisible()
+  // The chosen currency stays listed, so the list still shows it.
+  await expect(currency.locator('option')).toHaveText(['USD · US Dollar', 'THB · Thai Baht'])
+  await expect(currency).toHaveValue('USD')
+  // Enter searches; it doesn't submit the form.
+  await search.press('Enter')
+  await expect(page.getByText('Give the group a name.')).toHaveCount(0)
+  await currency.selectOption('THB')
+
+  await search.fill('zzz')
+  await expect(page.getByText('No currency matches “zzz”.')).toBeVisible()
+  await expect(currency).toHaveValue('THB')
+  await search.fill('')
+
+  await page.getByLabel('Group name').fill('Bangkok')
+  await page.getByLabel('Your name').fill('Minh')
+  await page.getByLabel('Person 1', { exact: true }).fill('An')
+  await page.getByRole('button', { name: 'Create group' }).click()
+  await page
+    .getByRole('dialog', { name: 'Invite people' })
+    .getByRole('button', { name: 'Close' })
+    .click()
+  await page.getByRole('link', { name: 'Group settings' }).click()
+  await expect(page.getByLabel('Currency', { exact: true })).toHaveValue('THB')
+})
+
+test('keeps at least two people', async ({ page }) => {
+  await page.goto('/new')
+  await page.getByLabel('Group name').fill('Flat')
+  await page.getByLabel('Your name').fill('Minh')
+  await page.getByLabel('Person 1', { exact: true }).fill('An')
+  await page.getByRole('button', { name: 'Create group' }).click()
+  await page
+    .getByRole('dialog', { name: 'Invite people' })
+    .getByRole('button', { name: 'Close' })
+    .click()
+  await page.getByRole('link', { name: 'Group settings' }).click()
+
+  await expect(page.getByRole('button', { name: 'Remove An' })).toHaveCount(0)
+  await expect(page.getByText('A group needs at least 2 people.')).toBeVisible()
+
+  // With a third person, either of the others can go, but not both.
+  await page.getByLabel('Add a person').fill('Linh')
+  await page.getByRole('button', { name: 'Add', exact: true }).click()
+  await page.getByRole('button', { name: 'Remove An' }).click()
+  await expect(page.getByRole('button', { name: 'Bring back An' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Remove Linh' })).toHaveCount(0)
 })
 
 test('stops at 50 people, and says so', async ({ page }) => {

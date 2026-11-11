@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { foldOps } from './fold.ts'
-import { displayNames, hasRoomForMember, isInvolved } from './members.ts'
+import { canRemoveMember, displayNames, hasRoomForMember, isInvolved } from './members.ts'
 import { Device, GROUP_ID, id, VND } from './testing.ts'
 
 const MINH = id('minh')
@@ -57,6 +57,20 @@ describe('hasRoomForMember', () => {
     expect(hasRoomForMember(full)).toBe(false)
     const removed = minh.op(MINH, 'member', LINH, { deleted: true })
     expect(hasRoomForMember(foldOps(GROUP_ID, [...ops, ...more, removed]))).toBe(true)
+  })
+})
+
+describe('canRemoveMember', () => {
+  it('keeps at least 2 current members, not counting removed ones', () => {
+    const { minh, ops } = group()
+    const remove = (key: typeof AN) => minh.op(MINH, 'member', key, { deleted: true })
+    // Five members, so three can go.
+    const three = [...ops, remove(AN), remove(AN_TWO)]
+    expect(canRemoveMember(foldOps(GROUP_ID, three))).toBe(true)
+    const two = [...three, remove(BAO)]
+    expect(canRemoveMember(foldOps(GROUP_ID, two))).toBe(false)
+    const back = minh.op(MINH, 'member', BAO, { deleted: false })
+    expect(canRemoveMember(foldOps(GROUP_ID, [...two, back]))).toBe(true)
   })
 })
 

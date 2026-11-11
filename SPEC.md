@@ -44,7 +44,7 @@ Tally is a shared-expense tracker for small groups: a trip, a shared flat, a gro
 3. **Amounts:** greater than 0 and at most 100,000,000,000 minor units per expense or payment. Amounts are exact; VND isn't rounded to 1,000₫.
 4. **Currency:** chosen at creation; it can be changed only while the group has no expenses or payments.
 5. **Payers:** one payer per expense. Multiple payers, notes and amount shorthand ("120k") come later.
-6. **Members:** can be added or renamed at any time, and removed only if they're in no expense or payment.
+6. **Members:** can be added or renamed at any time, and removed only if they're in no expense or payment and at least two people would remain.
 7. **Concurrent edits:** the last writer wins per field, but amount, payer and split change together as one unit, so a split always matches its amount. A deleted item stays deleted unless someone restores it.
 8. **Connection needs:** the first open of a group needs a connection to download it; everything after that works offline. A group created offline uploads when its creator reconnects.
 9. **Address bar:** after joining, the secret is removed from the address bar. The Share button always produces the full invite link.
@@ -79,9 +79,9 @@ Inside a group, a bottom tab bar holds Expenses, Balances and Activity. The head
 | Screen | Route | Contents |
 |---|---|---|
 | Home | `/` | First visit: a one-line pitch, **New group**, and **Join with a link** (paste). Returning: your groups with "You're owed", "You owe" or "Settled up" and the last activity, sorted by last opened; language and theme switches; install hint; link to About |
-| New group | `/new` | Group name, currency (searchable; defaults to VND for Vietnamese, otherwise to the region's currency, falling back to USD), your name, and at least one other name |
+| New group | `/new` | Group name, currency (a search box narrows the list by code or name; defaults to VND for Vietnamese, otherwise to the region's currency, falling back to USD), your name, and at least one other name |
 | Join | `/g/:id#secret` | Downloads the group, then asks "Who are you?" with the member list and "I'm not on the list" (which adds you). A link missing its secret, or one opened offline for the first time, explains what to do |
-| Expenses | `/g/:id` | Summary card (your balance, group total), search and filter chips, and a list grouped by day. Each row shows the category icon, title, who paid and your part. Payments appear in the list |
+| Expenses | `/g/:id` | Summary card (your balance, group total), search, filters behind a Filters toggle, and a list grouped by day. Each row shows the category icon, title, who paid and your part. Payments appear in the list |
 | Expense form | `/g/:id/e/new`, `/g/:id/e/:eid` | Amount (formatted as you type), title, category, paid by, date, and split mode with a row per person and a live "left to assign". In edit mode: Delete (with Undo) and this expense's change history |
 | Payment form | `/g/:id/pay/new`, `/g/:id/pay/:pid` | From, to, amount and date, prefilled when opened from a suggestion. In edit mode: Delete (with Undo) |
 | Balances | `/g/:id/balances` | Each member's net balance (in words and signs, never color alone) with paid and share totals, the **Settle up** list with "Mark as paid" and "Other amount", and spending by category |
@@ -90,14 +90,14 @@ Inside a group, a bottom tab bar holds Expenses, Balances and Activity. The head
 | Share sheet | (dialog) | QR code, Copy link, and Share where the browser supports it, with a reminder that anyone with the link can see and edit the group |
 | About | `/about` | How the encryption works, exactly what the relay can see and how long it keeps it, no analytics, and links to the source code and to report a problem (GitHub issues) |
 
-App-wide: a sync status indicator, Undo toasts, a "New version ready · Reload" toast, an install prompt (Android) or Add to Home Screen instructions (iOS), and an "Open in your browser" hint inside in-app browsers (Zalo, Messenger, Facebook, Instagram), where storage is separate and installing isn't possible.
+App-wide: Undo toasts, a "New version ready · Reload" toast, an install prompt (Android) or Add to Home Screen instructions (iOS), and an "Open in your browser" hint inside in-app browsers (Zalo, Messenger, Facebook, Instagram), where storage is separate and installing isn't possible.
 
 ## 5. Domain rules
 
 ### 5.1 Groups and members
 
 - **Group:** name (1–60 characters) and currency. The currency is stored as an ISO 4217 code plus its number of minor digits, so every device reads amounts the same way. It can change only while the group has no expenses or payments. A change that lands after one in the log (possible offline) is ignored.
-- **Members:** name (1–30 characters, unique within the group, ignoring case); 2–50 per group. Removed members don't count toward the 50, and bringing one back needs a free place.
+- **Members:** name (1–30 characters, unique within the group, ignoring case); 2–50 per group. Removed members don't count toward the 50, and bringing one back needs a free place. Settings offers removing someone only while at least two people would remain; as with removing someone who's in an expense, removals made offline at the same time can still leave fewer.
 - **Identity:** each device picks "who am I" per group, and the choice is stored only on that device. You must pick before adding anything. Several devices can act as the same person. If your member is removed, Tally asks again.
 - **Duplicate names:** if two people add the same name while offline, both appear (the second as "An (2)"), and the unused one can be removed.
 - **Removed but involved:** a removed member who still appears in an expense (possible after concurrent offline edits) stays in balances, is labeled "removed", and can be restored.
@@ -137,8 +137,8 @@ App-wide: a sync status indicator, Undo toasts, a "New version ready · Reload" 
 
 ### 5.5 Search, filters and export
 
-- **Search** matches titles, ignoring case and Vietnamese diacritics: "pho" finds "Phở", and "da lat" finds "Đà Lạt".
-- **Filters:** person (paid or involved), month, category and type (expenses or payments). Filters live in the URL so the Back button works, and the summary shows the filtered total.
+- **Search** matches an expense's title and who paid, and a payment's two people, ignoring case and Vietnamese diacritics: "pho" finds "Phở", and "da lat" finds "Đà Lạt".
+- **Filters:** person (paid or involved), month, category and type (expenses or payments). Filters live in the URL, and each change is a step the Back button undoes (a search is one step, not one per letter). The summary shows the filtered total.
 - **CSV export** is generated on the device, with one row per expense or payment. Columns are date, type, title, category, amount, currency, paid by or from, to, and one column per member's share. The file is UTF-8 with a byte-order mark so Excel shows Vietnamese correctly, and amounts are plain numbers.
 
 ## 6. Sync and data model
@@ -206,7 +206,7 @@ The protocol runs over a WebSocket at `/api/g/:groupId/ws`.
 
 - **Worker:** one Cloudflare Worker serves the built app (static assets with a single-page fallback). It validates the group ID format, then routes `/api/g/:groupId/ws` to that group's Durable Object.
 - **Durable Object:** keeps the log in its SQLite storage and uses the WebSocket Hibernation API, so idle groups cost nothing.
-- **Retention:** every connection moves the group's deletion alarm to 12 months out. When the alarm fires, the Durable Object deletes all of its storage.
+- **Retention:** every connection that presents the group's token moves its deletion alarm to 12 months out; one that doesn't (or one for a group nobody created) leaves it alone. When the alarm fires, the Durable Object deletes all of its storage.
 - **Abuse limits:** the 50 connections per group count only devices that have sent a valid token; a connection that hasn't yet makes way for a new one, oldest first, so knowing a group's ID isn't enough to keep its devices out. Besides the per-group limits in section 2, Cloudflare's rate-limiting binding caps each IP address at 300 connections and 60 new groups a minute, per Cloudflare location. The caps are generous because many phones share an address behind mobile carriers' NAT.
 - **Local development:** `@cloudflare/vite-plugin` runs the same Worker and Durable Object inside `vite dev`, so one command starts everything.
 
@@ -280,16 +280,16 @@ tally/
 
 ## 13. Testing, CI and deployment
 
-- **Unit and property tests** (Vitest and fast-check) cover everything in `src/domain` and `src/sync`, with at least 95% coverage of those folders. Properties tested:
+- **Unit and property tests** (Vitest and fast-check) cover everything in `src/domain` and `src/sync`, with at least 95% coverage of each of those folders. Properties tested:
   - Every split sums to its amount.
   - Balances always sum to zero.
   - Applying the settle-up transfers zeroes every balance, uses at most n − 1 transfers, and matches a brute-force minimum for small groups.
   - Any delivery order of the same operations folds to the same state.
   - Encrypting then decrypting returns the original, and any tampering fails.
-- **Relay tests** run in the Workers runtime (`@cloudflare/vitest-plugin`, the successor to `vitest-pool-workers`, which doesn't support Vitest 5) and cover auth, deduplication, cursors, limits, broadcast, the retention alarm and re-upload after deletion.
+- **Relay tests** run in the Workers runtime (`@cloudflare/vitest-plugin`, the successor to `vitest-pool-workers`, which doesn't support Vitest 5) and cover auth, deduplication, cursors, limits (per group, per connection and per IP address), broadcast, the retention alarm and re-upload after deletion.
 - **End-to-end tests** (Playwright, Chromium and mobile WebKit) run the walkthrough in section 3 with up to four browser contexts as separate phones, one of them going offline midway. They also cover joining by link, restoring from Activity, the CSV contents and both languages.
 - **Accessibility:** axe runs on every screen, in both themes and both languages.
-- **CI:** GitHub Actions runs on every push: typecheck, lint, unit and property tests, relay tests, build, bundle size, end-to-end tests with axe, then Lighthouse CI (median of three runs).
+- **CI:** GitHub Actions runs on every push to `main` and on every pull request, in three parallel jobs: typecheck, lint, unit and property tests, relay tests, build and bundle size; end-to-end tests with axe; and Lighthouse CI (median of three runs). The deploy waits for all three.
 - **Deploy:** on `main`, and only after every check passes, Wrangler deploys the Worker, its static assets and any Durable Object migrations. A smoke test then loads the live site and confirms the relay answers, without creating any data.
 - **Secrets:** `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` live in GitHub Actions secrets, which you add. I never see the token.
 - **Rollback:** `wrangler rollback` restores the previous version in seconds.

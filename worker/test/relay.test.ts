@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 import { LIMITS } from '../../shared/protocol.ts'
 import { RETENTION_MS } from '../group-log.ts'
+import worker from '../index.ts'
 import { Client, fakeOp, newGroupId, newToken } from './relay.ts'
 
 const stub = (groupId: string) => env.GROUP_LOG.get(env.GROUP_LOG.idFromName(groupId))
@@ -48,6 +49,50 @@ describe('the Worker', () => {
     expect(plain.status).toBe(426)
     const other = await exports.default.fetch('https://tally.test/api/anything')
     expect(other.status).toBe(404)
+  })
+})
+
+/** A stand-in for a rate-limit binding, recording the keys it's asked about. */
+function rateLimit(success: boolean) {
+  const keys: string[] = []
+  const binding: RateLimit = {
+    limit: ({ key }) => {
+      keys.push(key)
+      return Promise.resolve({ success })
+    },
+  }
+  return { binding, keys }
+}
+
+describe('limits per IP address', () => {
+  it('turns away an address with too many connections, before it reaches the group', async () => {
+    const groupId = newGroupId()
+    const { binding, keys } = rateLimit(false)
+    const response = await worker.fetch(
+      new Request(`https://tally.test/api/g/${groupId}/ws`, {
+        headers: { Upgrade: 'websocket', 'CF-Connecting-IP': '203.0.113.7' },
+      }),
+      { ...env, CONNECT_LIMIT: binding },
+    )
+    expect(response.status).toBe(429)
+    expect(await response.json()).toEqual({ error: 'rate_limited' })
+    expect(response.webSocket).toBeNull()
+    expect(keys).toEqual(['203.0.113.7'])
+    expect(await tables(groupId)).toEqual([])
+  })
+
+  it('turns away an address that starts too many groups, storing nothing', async () => {
+    const groupId = newGroupId()
+    const { binding, keys } = rateLimit(false)
+    await runInDurableObject(stub(groupId), (instance) => {
+      ;(instance as unknown as { env: Env }).env = { ...env, CREATE_LIMIT: binding }
+    })
+    const client = await Client.connect(groupId, '203.0.113.8')
+    client.send({ type: 'hello', token: newToken(), after: 0, create: true })
+    expect(await client.next()).toEqual({ type: 'error', code: 'rate_limited', retryAfter: 60_000 })
+    await client.whenClosed()
+    expect(keys).toEqual(['203.0.113.8'])
+    expect(await tables(groupId)).toEqual([])
   })
 })
 

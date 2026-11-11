@@ -69,6 +69,9 @@ export const vi: Catalog = {
   'newGroup.removePerson': 'Xóa người thứ {number}',
   'newGroup.create': 'Tạo nhóm',
   'newGroup.currencyOption': '{code} · {name}',
+  'currency.search': 'Tìm loại tiền',
+  'currency.matches': { other: 'Có {count} loại tiền phù hợp' },
+  'currency.noMatch': 'Không có loại tiền nào khớp với “{query}”.',
 
   'error.groupName': 'Hãy đặt tên cho nhóm.',
   'error.yourName': 'Hãy nhập tên của bạn.',
@@ -292,6 +295,7 @@ export const vi: Catalog = {
   'settings.restorePerson': 'Đưa {name} trở lại',
   'settings.cantRemove': 'Có trong một khoản chi hoặc khoản trả nên không xóa được.',
   'settings.removed': 'Đã rời nhóm',
+  'settings.minPeople': 'Một nhóm cần ít nhất {min} người.',
   'settings.addPerson': 'Thêm người',
   'settings.personAdded': 'Đã thêm {name}',
   'settings.personRemoved': 'Đã xóa {name}',
