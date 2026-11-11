@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import { useI18n } from '../../i18n/I18nProvider.tsx'
-import { joinGroup, type JoinOutcome } from '../../sync/join.ts'
+import type { JoinOutcome } from '../../sync/join.ts'
 import { Button, ButtonLink } from '../../ui/Button.tsx'
 import { Page } from '../../ui/Page.tsx'
 import styles from './join.module.css'
@@ -26,9 +26,15 @@ export function JoinScreen({ groupId, secret }: { groupId: string; secret: strin
 
   useEffect(() => {
     let live = true
-    void joinGroup(groupId, secret).then((outcome) => {
-      if (live && outcome !== 'joined') setFailure(outcome)
-    })
+    // Downloading needs the sync engine and its encryption. Like a group
+    // screen, this screen shows first and loads them just after
+    // (SPEC.md section 10), keeping an invite link's first load in budget.
+    void import('../../sync/join.ts')
+      .then(({ joinGroup }) => joinGroup(groupId, secret))
+      .catch((): JoinOutcome => (navigator.onLine ? 'unreachable' : 'offline'))
+      .then((outcome) => {
+        if (live && outcome !== 'joined') setFailure(outcome)
+      })
     return () => {
       live = false
     }

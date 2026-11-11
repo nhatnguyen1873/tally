@@ -142,6 +142,20 @@ test('starts in the saved theme and language', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'Tạo nhóm' })).toBeVisible()
 })
 
+test('colors the browser bar for the chosen theme, not only the system’s', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'light' })
+  await page.addInitScript(() => {
+    localStorage.setItem('tally:prefs', JSON.stringify({ theme: 'dark' }))
+  })
+  await page.goto('/')
+  await expect(page.getByRole('link', { name: 'New group' })).toBeVisible()
+  const barColor = () =>
+    page.evaluate(
+      `[...document.querySelectorAll('meta[name="theme-color"]')].find((meta) => matchMedia(meta.media || 'all').matches)?.content`,
+    )
+  expect(await barColor()).toBe('#121316')
+})
+
 test('sends the security headers, allowing only the boot script inline', async ({ request }) => {
   const headers = (await request.get('/')).headers()
   const csp = headers['content-security-policy'] ?? ''

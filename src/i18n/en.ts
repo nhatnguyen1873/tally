@@ -92,6 +92,7 @@ export const en = {
   'error.splitExact': 'The amounts must add up to {amount}.',
   'error.splitPercent': 'The percentages must add up to 100%.',
   'error.samePerson': 'Choose two different people.',
+  'error.date': 'Choose a date from 1900 to 2999.',
 
   'group.tab.expenses': 'Expenses',
   'group.tab.balances': 'Balances',

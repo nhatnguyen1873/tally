@@ -3,6 +3,7 @@ import { useLocation, useParams, useSearch } from 'wouter'
 
 import type { Payment } from '../../domain/fold.ts'
 import { randomId } from '../../domain/ids.ts'
+import { DATE_RANGE, isValidDate } from '../../domain/model.ts'
 import { isValidAmount } from '../../domain/money.ts'
 import { todayIso } from '../../i18n/format.ts'
 import { useI18n } from '../../i18n/I18nProvider.tsx'
@@ -55,12 +56,13 @@ function PaymentForm({ group, payment }: { group: Group; payment: Payment | null
   // Back to Balances, or to the list with the filters it had when this was opened.
   const [list] = useState(() => listHref(group.id, history.state))
   const back = prefill.get('back') === 'balances' ? `/g/${group.id}/balances` : list
-  const members = people.all.filter(
-    (member) => !member.deleted || member.id === payment?.from || member.id === payment?.to,
-  )
-  const isMember = (id: string | null) => members.some((member) => member.id === id)
   const prefillFrom = prefill.get('from')
   const prefillTo = prefill.get('to')
+  // Current members, plus anyone this payment involves even if removed since:
+  // a removed member can still owe or be owed, and settle-up suggests them.
+  const involved = payment ? [payment.from, payment.to] : [prefillFrom, prefillTo]
+  const members = people.all.filter((member) => !member.deleted || involved.includes(member.id))
+  const isMember = (id: string | null) => members.some((member) => member.id === id)
   const prefillAmount = Number(prefill.get('amount'))
 
   const [from, setFrom] = useState(
@@ -82,6 +84,7 @@ function PaymentForm({ group, payment }: { group: Group; payment: Payment | null
   const errors = {
     amount: !amount ? t('error.amount') : isValidAmount(amount) ? null : t('error.amountTooLarge'),
     people: from === to ? t('error.samePerson') : null,
+    date: isValidDate(date) ? null : t('error.date'),
   }
   const shown = attempts > 0
 
@@ -91,7 +94,7 @@ function PaymentForm({ group, payment }: { group: Group; payment: Payment | null
 
   async function save(event: SubmitEvent) {
     event.preventDefault()
-    if (errors.amount || errors.people || amount === null) {
+    if (errors.amount || errors.people || errors.date || amount === null) {
       setAttempts((count) => count + 1)
       return
     }
@@ -169,7 +172,10 @@ function PaymentForm({ group, payment }: { group: Group; payment: Payment | null
           label={t('payment.date')}
           type="date"
           value={date}
+          min={DATE_RANGE.min}
+          max={DATE_RANGE.max}
           required
+          error={shown ? errors.date : null}
           onValue={(value) => {
             if (value) setDate(value)
           }}

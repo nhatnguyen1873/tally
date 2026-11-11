@@ -62,7 +62,10 @@ console.log(`Prerendered ${PAGE} and allowed its boot script (sha256-${hash})`)
 const ignored = readFileSync('dist/client/.assetsignore', 'utf8').split('\n').filter(Boolean)
 const NOT_CACHED = new Set(['.assetsignore', ...ignored, '_headers', 'robots.txt', 'sw.js'])
 const precache = []
-const version = createHash('sha256')
+// The headers count toward the version though they aren't kept: the cached
+// page keeps the headers it came with, its CSP included, so a deploy that
+// changes only them must still bring a new version.
+const version = createHash('sha256').update(readFileSync(HEADERS))
 for (const entry of readdirSync('dist/client', { recursive: true, withFileTypes: true })) {
   if (!entry.isFile()) continue
   const file = join(entry.parentPath, entry.name)

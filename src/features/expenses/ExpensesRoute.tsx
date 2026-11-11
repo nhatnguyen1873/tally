@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useSearch } from 'wouter'
 
 import { balances, expenseEffect } from '../../domain/balances.ts'
@@ -148,6 +148,15 @@ function FilterBar({
 }) {
   const { t, month } = useI18n()
   const narrowed = Boolean(filters.person || filters.month || filters.category || filters.type)
+  // The panel opens when filters arrive (from the address, or Back) and
+  // otherwise stays as the user left it, so clearing the last filter while
+  // using it doesn't snap it shut.
+  const [open, setOpen] = useState(narrowed)
+  const [wasNarrowed, setWasNarrowed] = useState(narrowed)
+  if (narrowed !== wasNarrowed) {
+    setWasNarrowed(narrowed)
+    if (narrowed) setOpen(true)
+  }
   return (
     <div className={styles.filters}>
       <label className="visually-hidden" htmlFor="expense-search">
@@ -163,7 +172,13 @@ function FilterBar({
           onChange({ query: event.target.value })
         }}
       />
-      <details className={styles.more} open={narrowed}>
+      <details
+        className={styles.more}
+        open={open}
+        onToggle={(event) => {
+          setOpen(event.currentTarget.open)
+        }}
+      >
         <summary className={styles.summaryToggle}>{t('expenses.filters')}</summary>
         <div className={styles.grid}>
           <SelectField

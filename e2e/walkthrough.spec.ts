@@ -113,6 +113,46 @@ test('splits by exact amounts, shares and percentages', async ({ page }) => {
   await expect(page.getByText('An', { exact: true }).locator('..')).toContainText('owes ₫33,333')
 })
 
+test('takes part amounts and percentages below one, typed key by key', async ({ page }) => {
+  await createTrip(page)
+  await page.getByRole('link', { name: 'Add expense' }).click()
+  await page.getByLabel('Amount', { exact: true }).fill('100000')
+  await page.getByRole('radio', { name: 'Percentages' }).check()
+  const an = page.getByLabel('Percentage for An')
+  await an.fill('')
+  // "0" and "0." mean no percentage yet; the field must keep them as typed.
+  await an.pressSequentially('0.5')
+  await expect(an).toHaveValue('0.5')
+  await page.getByRole('radio', { name: 'Exact amounts' }).check()
+  const linh = page.getByLabel('Amount for Linh')
+  await linh.pressSequentially('0')
+  await expect(linh).toHaveValue('0')
+})
+
+test('refuses a date outside 1900 to 2999 instead of losing the expense', async ({ page }) => {
+  await createTrip(page)
+  await page.getByRole('link', { name: 'Add expense' }).click()
+  await page.getByLabel('Amount', { exact: true }).fill('100000')
+  await page.getByLabel('What was it for?').fill('Old receipt')
+  await page.getByLabel('Date').fill('0026-11-11')
+  await page.getByRole('button', { name: 'Save expense' }).click()
+  await expect(page.getByText('Choose a date from 1900 to 2999.')).toBeVisible()
+  await expect(page.getByLabel('Date')).toBeFocused()
+  await page.getByLabel('Date').fill('2026-11-11')
+  await page.getByRole('button', { name: 'Save expense' }).click()
+  await expect(page.getByRole('link', { name: /Old receipt/ })).toBeVisible()
+})
+
+test('keeps the filters open while clearing the last one', async ({ page }) => {
+  await createTrip(page)
+  await addExpense(page, { amount: '160000', title: 'Taxi', category: 'Transport' })
+  await page.getByText('Filters').click()
+  const category = page.getByLabel('Category')
+  await category.selectOption({ label: 'Transport' })
+  await category.selectOption({ label: 'Any category' })
+  await expect(category).toBeVisible()
+})
+
 test('searches, filters, deletes and restores', async ({ page }) => {
   await createTrip(page)
   await addExpense(page, { amount: '90000', title: 'Phở Thìn', category: 'Food & drink' })
@@ -203,6 +243,49 @@ test('people can be added, renamed and removed', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Remove Hoa' }).click()
   await expect(page.getByRole('button', { name: 'Bring back Hoa' })).toBeVisible()
+})
+
+test('shows a rename made elsewhere, rather than saving the old name back', async ({ page }) => {
+  await createTrip(page)
+  await page.getByRole('link', { name: 'Group settings' }).click()
+  // Another tab stands in for another device: both reach this one the same way.
+  const other = await page.context().newPage()
+  await other.goto(page.url())
+  await other.getByLabel('Name for An').fill('Anh')
+  await other.getByLabel('Name for An').press('Enter')
+  await other.getByLabel('Group name').fill('Đà Lạt 2026')
+  await other.getByLabel('Group name').press('Enter')
+
+  await expect(page.getByLabel('Name for Anh')).toHaveValue('Anh')
+  await expect(page.getByLabel('Group name')).toHaveValue('Đà Lạt 2026')
+  // Nothing to save: the field holds what's stored.
+  await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled()
+})
+
+test('settles up with someone removed who still owes', async ({ page }) => {
+  await createTrip(page)
+  await addExpense(page, { amount: '160000', title: 'Taxi', category: 'Transport' })
+  await page.getByRole('link', { name: /Taxi/ }).click()
+  await page.getByRole('button', { name: 'Delete expense' }).click()
+  await page.getByRole('link', { name: 'Group settings' }).click()
+  await page.getByRole('button', { name: 'Remove Bảo' }).click()
+  await page.getByRole('link', { name: 'Back' }).click()
+  await tab(page, 'Activity').click()
+  await page
+    .getByRole('listitem')
+    .filter({ hasText: 'Taxi' })
+    .getByRole('button', { name: 'Restore' })
+    .click()
+
+  await tab(page, 'Balances').click()
+  await expect(page.getByText('Bảo pays you')).toBeVisible()
+  await page
+    .getByRole('link', { name: /Other amount/ })
+    .last()
+    .click()
+  await expect(page.getByLabel('Who paid')).toHaveValue(/.+/)
+  expect(await page.getByLabel('Who paid').locator('option:checked').textContent()).toContain('Bảo')
+  await expect(page.getByLabel('Amount', { exact: true })).toHaveValue('40,000')
 })
 
 test('finds a currency by name or code', async ({ page }) => {

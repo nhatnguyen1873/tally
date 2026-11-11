@@ -1,7 +1,8 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 
-import { EXACT_LIMIT, settleUp, type Transfer } from './settle.ts'
+import { isValidAmount, MAX_AMOUNT } from './money.ts'
+import { EXACT_LIMIT, settleUp, type Transfer, transferPayments } from './settle.ts'
 import { id } from './testing.ts'
 
 const [A, B, C, D, E] = ['a', 'b', 'c', 'd', 'e'].map(id) as [
@@ -157,5 +158,24 @@ describe('settleUp', () => {
     const transfers = settleUp(nets)
     expect(performance.now() - started).toBeLessThan(1000)
     expect(settled(nets, transfers).every((left) => left === 0)).toBe(true)
+  })
+})
+
+describe('transferPayments', () => {
+  it('records a transfer within the limit as one payment', () => {
+    expect(transferPayments(1)).toEqual([1])
+    expect(transferPayments(MAX_AMOUNT)).toEqual([MAX_AMOUNT])
+  })
+
+  it('splits a larger transfer into payments within the limit that add up to it', () => {
+    expect(transferPayments(2 * MAX_AMOUNT + 5)).toEqual([MAX_AMOUNT, MAX_AMOUNT, 5])
+    fc.assert(
+      fc.property(fc.integer({ min: 1, max: 50 * MAX_AMOUNT }), (amount) => {
+        const parts = transferPayments(amount)
+        expect(parts.reduce((sum, part) => sum + part, 0)).toBe(amount)
+        expect(parts.every(isValidAmount)).toBe(true)
+        expect(parts.length).toBe(Math.ceil(amount / MAX_AMOUNT))
+      }),
+    )
   })
 })

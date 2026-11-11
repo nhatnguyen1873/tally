@@ -52,7 +52,10 @@ export function isValidText(value: unknown, max: number): value is string {
   return length >= 1 && length <= max
 }
 
-/** A real calendar date written as YYYY-MM-DD. */
+/** The first and last dates an expense or payment can have, for date fields. */
+export const DATE_RANGE = { min: '1900-01-01', max: '2999-12-31' } as const
+
+/** A real calendar date written as YYYY-MM-DD, within DATE_RANGE. */
 export function isValidDate(value: unknown): value is string {
   if (typeof value !== 'string') return false
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)

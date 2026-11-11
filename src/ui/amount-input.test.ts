@@ -48,6 +48,13 @@ describe('readAmountText', () => {
     expect(readAmountText('0', 0, VI).decimal).toBe('0')
     expect(readAmountText('00.50', 2, EN).decimal).toBe('0.50')
   })
+
+  it('stops taking digits before an amount stops being a safe integer', () => {
+    expect(readAmountText('9'.repeat(20), 0, EN).decimal).toBe('9'.repeat(15))
+    expect(readAmountText(`${'9'.repeat(20)}.99`, 2, EN).decimal).toBe(`${'9'.repeat(13)}.99`)
+    expect(amountOf(readAmountText('9'.repeat(20), 0, EN).decimal, 0)).toBe(999_999_999_999_999)
+    expect(amountOf(readAmountText('9'.repeat(20), 4, EN).decimal, 4)).toBe(999_999_999_990_000)
+  })
 })
 
 describe('amountOf and displayAmount', () => {

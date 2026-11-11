@@ -79,6 +79,12 @@ export class GroupStore {
   private view: GroupView
   private clock: Hlc | undefined
   private readonly listeners = new Set<() => void>()
+  /**
+   * Changes run one at a time. Each builds the next record from the current
+   * one and saves it, so two at once (sync receiving while you pick who you
+   * are, say) would otherwise each overwrite what the other changed.
+   */
+  private queue: Promise<unknown> = Promise.resolve()
 
   private constructor(record: GroupRecord, ops: Op[]) {
     this.record = record
@@ -101,8 +107,18 @@ export class GroupStore {
     }
   }
 
+  private serial<T>(task: () => Promise<T>): Promise<T> {
+    const run = this.queue.then(task)
+    this.queue = run.catch(() => undefined)
+    return run
+  }
+
   /** Records changes as this device's member, saving before anyone sees them. */
-  async write(changes: readonly Change[]): Promise<Op[]> {
+  write(changes: readonly Change[]): Promise<Op[]> {
+    return this.serial(() => this.writeNow(changes))
+  }
+
+  private async writeNow(changes: readonly Change[]): Promise<Op[]> {
     const { me, actor } = this.record
     if (!me) throw new Error('Choose who you are before making changes')
     const now = Date.now()
@@ -128,17 +144,23 @@ export class GroupStore {
    * Joins as a new member: "I'm not on the list". The member is created by
    * itself, which the activity feed reads as "joined".
    */
-  async joinAs(name: string): Promise<void> {
-    const me = randomId()
-    this.record = { ...this.record, me }
-    await this.write([{ entity: 'member', key: me, set: { name } }])
+  joinAs(name: string): Promise<void> {
+    return this.serial(async () => {
+      const me = randomId()
+      this.record = { ...this.record, me }
+      await this.writeNow([{ entity: 'member', key: me, set: { name } }])
+    })
   }
 
   /**
    * Takes operations from the relay. They may repeat ones this device has;
    * saving one again changes nothing but marks it synced.
    */
-  async receive(ops: readonly Op[], cursor: number): Promise<void> {
+  receive(ops: readonly Op[], cursor: number): Promise<void> {
+    return this.serial(() => this.receiveNow(ops, cursor))
+  }
+
+  private async receiveNow(ops: readonly Op[], cursor: number): Promise<void> {
     const record = { ...this.record, cursor: Math.max(this.record.cursor, cursor) }
     await saveOps(record, ops, true)
     this.record = record
@@ -152,18 +174,22 @@ export class GroupStore {
   }
 
   /** The relay has these operations, and the log up to `cursor`. */
-  async synced(ids: readonly string[], cursor: number): Promise<void> {
-    this.record = { ...this.record, cursor: Math.max(this.record.cursor, cursor) }
-    await markSynced(this.record, ids)
-    this.publish(false)
-    announce(this.record.id)
+  synced(ids: readonly string[], cursor: number): Promise<void> {
+    return this.serial(async () => {
+      this.record = { ...this.record, cursor: Math.max(this.record.cursor, cursor) }
+      await markSynced(this.record, ids)
+      this.publish(false)
+      announce(this.record.id)
+    })
   }
 
   /** Remembers which relay log this device syncs with. */
-  async setEpoch(epoch: string): Promise<void> {
-    this.record = { ...this.record, epoch }
-    await putGroupRecord(this.record)
-    this.publish(false)
+  setEpoch(epoch: string): Promise<void> {
+    return this.serial(async () => {
+      this.record = { ...this.record, epoch }
+      await putGroupRecord(this.record)
+      this.publish(false)
+    })
   }
 
   /**
@@ -171,23 +197,31 @@ export class GroupStore {
    * again from elsewhere): upload everything again, into `epoch` or into a
    * new log when it's null.
    */
-  async startOver(epoch: string | null): Promise<void> {
-    this.record = { ...this.record, cursor: 0, epoch }
-    await markAllPending(this.record)
-    this.publish(false)
-    announce(this.record.id)
+  startOver(epoch: string | null): Promise<void> {
+    return this.serial(async () => {
+      this.record = { ...this.record, cursor: 0, epoch }
+      await markAllPending(this.record)
+      this.publish(false)
+      announce(this.record.id)
+    })
   }
 
   /** Changes what this device keeps about the group: who it is, what it has read. */
-  async update(patch: Partial<Pick<GroupRecord, 'me' | 'readUpTo' | 'openedAt'>>): Promise<void> {
-    this.record = { ...this.record, ...patch }
-    await putGroupRecord(this.record)
-    this.publish(false)
-    announce(this.record.id)
+  update(patch: Partial<Pick<GroupRecord, 'me' | 'readUpTo' | 'openedAt'>>): Promise<void> {
+    return this.serial(async () => {
+      this.record = { ...this.record, ...patch }
+      await putGroupRecord(this.record)
+      this.publish(false)
+      announce(this.record.id)
+    })
   }
 
   /** Re-reads the group after another tab changed it. */
-  async reload(): Promise<void> {
+  reload(): Promise<void> {
+    return this.serial(() => this.reloadNow())
+  }
+
+  private async reloadNow(): Promise<void> {
     const record = await getGroupRecord(this.record.id)
     if (!record) {
       stores.delete(this.record.id)
@@ -217,7 +251,9 @@ function startingClock(record: GroupRecord, state: GroupState): Hlc | undefined 
   // operations were refused) would stamp operations everyone refuses.
   const own = decoded && hlcIsPlausible(decoded) ? decoded : undefined
   const latest = state.latestHlc ? hlcDecode(state.latestHlc) : null
-  if (!latest || latest.node === record.actor) return own
+  // This device's own clock already covers its own operations, unless it was
+  // just thrown away for being out of range.
+  if (!latest || (own && latest.node === record.actor)) return own
   return hlcReceive(own, latest, Date.now(), record.actor)
 }
 

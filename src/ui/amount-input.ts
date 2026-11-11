@@ -21,6 +21,13 @@ export interface AmountText {
   readonly decimal: string
 }
 
+/**
+ * Digits a field keeps, fraction included. Any number this long is still a
+ * safe integer in minor units, yet far beyond MAX_AMOUNT, so an amount typed
+ * too long reads as "more than Tally can record", never as no amount.
+ */
+const MAX_DIGITS = 15
+
 function group(digits: string, separator: string): string {
   return digits.replace(/\B(?=(\d{3})+(?!\d))/g, separator)
 }
@@ -28,8 +35,8 @@ function group(digits: string, separator: string): string {
 /**
  * Reads what's in the field. Our own grouping separators are dropped, the
  * first decimal separator starts the fraction (if the currency has one), and
- * anything else is ignored. Leading zeros go, and the fraction is cut to the
- * currency's digits.
+ * anything else is ignored. Leading zeros go, the fraction is cut to the
+ * currency's digits, and the whole part to what MAX_DIGITS leaves.
  */
 export function readAmountText(text: string, digits: number, symbols: NumberSymbols): AmountText {
   let whole = ''
@@ -43,7 +50,7 @@ export function readAmountText(text: string, digits: number, symbols: NumberSymb
       pointAt = whole.length
     }
   }
-  whole = whole.replace(/^0+(?=\d)/, '')
+  whole = whole.replace(/^0+(?=\d)/, '').slice(0, MAX_DIGITS - digits)
   if (pointAt >= 0 && whole === '') whole = '0'
   const point = pointAt >= 0
   return {

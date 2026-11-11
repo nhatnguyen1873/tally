@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useId, useRef } from 'react'
+import { type ReactNode, useEffect, useId, useLayoutEffect, useRef } from 'react'
 
 import { IconButton } from './Button.tsx'
 import styles from './Dialog.module.css'
@@ -31,6 +31,16 @@ export function Dialog({
     if (open && !element.open) element.showModal()
     if (!open && element.open) element.close()
   }, [open])
+
+  // Parents often remove an open dialog (its Close or Cancel button unmounts
+  // it). Only close() gives focus back to where it was, so call it while the
+  // dialog is still on the page: layout cleanups run before React removes it.
+  useLayoutEffect(() => {
+    const element = dialog.current
+    return () => {
+      if (element?.open) element.close()
+    }
+  }, [])
 
   return (
     <dialog ref={dialog} className={styles.dialog} aria-labelledby={titleId} onClose={onClose}>

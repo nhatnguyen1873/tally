@@ -90,6 +90,7 @@ export const vi: Catalog = {
   'error.splitExact': 'Tổng các phần phải bằng {amount}.',
   'error.splitPercent': 'Tổng phần trăm phải bằng 100%.',
   'error.samePerson': 'Hãy chọn hai người khác nhau.',
+  'error.date': 'Hãy chọn một ngày từ năm 1900 đến năm 2999.',
 
   'group.tab.expenses': 'Khoản chi',
   'group.tab.balances': 'Công nợ',

@@ -53,6 +53,13 @@ function SettingsScreen({ group }: { group: Group }) {
   const [, navigate] = useLocation()
   const { people, info, state, store } = group
   const [name, setName] = useState(info.name)
+  const [savedName, setSavedName] = useState(info.name)
+  // Renamed elsewhere (another device, or another tab): show the new name,
+  // unless an edit is under way here, so Save never writes back a stale one.
+  if (info.name !== savedName) {
+    setSavedName(info.name)
+    if (cleanText(name) === savedName) setName(info.name)
+  }
   const [confirming, setConfirming] = useState(false)
   const [sharing, setSharing] = useState(false)
   const { pending } = useSyncStatus(group.id)
@@ -234,6 +241,12 @@ function MemberRow({ group, member }: { group: Group; member: Member }) {
   const { t } = useI18n()
   const toast = useToast()
   const [name, setName] = useState(member.name)
+  const [savedName, setSavedName] = useState(member.name)
+  // As for the group name: follow a rename made elsewhere unless editing here.
+  if (member.name !== savedName) {
+    setSavedName(member.name)
+    if (cleanText(name) === savedName) setName(member.name)
+  }
   const { people, store } = group
   const involved = isInvolved(group.state, member.id)
   // Only current members can be removed, and a group keeps at least 2 people.

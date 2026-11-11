@@ -1,4 +1,5 @@
 import type { MemberId } from './ids.ts'
+import { MAX_AMOUNT } from './money.ts'
 
 export interface Transfer {
   readonly from: MemberId
@@ -112,4 +113,15 @@ function settleGroup(group: readonly Person[]): { from: Person; to: Person; amou
     if (creditor.left === 0) owed.shift()
     if (debtor.left === 0) owing.shift()
   }
+}
+
+/**
+ * The payments that record a transfer in full. One payment holds at most
+ * MAX_AMOUNT, and a debt built from several expenses can be larger, so such a
+ * transfer becomes several payments that add up to it.
+ */
+export function transferPayments(amount: number): number[] {
+  const parts: number[] = []
+  for (let left = amount; left > 0; left -= MAX_AMOUNT) parts.push(Math.min(left, MAX_AMOUNT))
+  return parts
 }

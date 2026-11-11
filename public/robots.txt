@@ -1,3 +1,4 @@
 User-agent: *
 Disallow: /api/
-Disallow: /g/
+# Group pages (/g/) stay crawlable on purpose: they send X-Robots-Tag: noindex,
+# which a crawler only sees if it's allowed to fetch them.

@@ -78,9 +78,20 @@ export function usePrefs(): Prefs {
   return useSyncExternalStore(subscribe, getPrefs, () => DEFAULTS)
 }
 
-/** Forces a theme on the page; "system" leaves it to the color-scheme media query. */
+/**
+ * Forces a theme on the page; "system" leaves it to the color-scheme media
+ * query. The browser bar follows too: index.html has a theme-color tag per
+ * color scheme, and a forced theme makes its own tag apply whatever the
+ * system's scheme, and the other never.
+ */
 export function applyTheme(theme: ThemePreference): void {
   const root = document.documentElement
   if (theme === 'system') delete root.dataset.theme
   else root.dataset.theme = theme
+  for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')) {
+    meta.dataset.media ??= meta.media
+    const media = meta.dataset.media
+    if (theme === 'system') meta.media = media
+    else meta.media = media.includes(theme) ? 'all' : 'not all'
+  }
 }

@@ -4,7 +4,7 @@
 // the one it uses), and the screen's own chunk and everything that imports.
 // Run after `pnpm build`.
 import { existsSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { gzipSync } from 'node:zlib'
 
 const DIST = 'dist/client'
@@ -13,6 +13,10 @@ const BUDGETS = { js: 110_000, css: 15_000 } // gzipped bytes
 const CATALOGS = ['src/i18n/en.ts', 'src/i18n/vi.ts']
 // Home ships with the entry and loads the group list as soon as it renders.
 const HOME_LOADS = 'src/sync/groups.ts'
+// An invite link for a group this device doesn't have yet opens the group's
+// route, which shows the join screen in its place.
+const GROUP_ROUTE = 'src/features/expenses/ExpensesRoute.tsx'
+const JOIN_SCREEN = 'src/features/join/JoinScreen.tsx'
 
 if (!existsSync(MANIFEST)) {
   console.error(`${MANIFEST} not found. Run \`pnpm build\` first.`)
@@ -46,24 +50,39 @@ const pageCss = [
 if (pageCss.length === 0) throw new Error(`No stylesheet linked from ${DIST}/index.html`)
 
 const entries = Object.entries(manifest)
-const keyOf = (src) => entries.find(([, chunk]) => chunk.src === src)?.[0]
+/**
+ * A module's chunk. Chunks that a module shares with others carry no `src`,
+ * only a name taken from the module's file, so fall back to a unique name.
+ */
+function keyOf(src) {
+  const own = entries.find(([, chunk]) => chunk.src === src)
+  if (own) return own[0]
+  const stem = basename(src).replace(/\.[^.]+$/, '')
+  const named = entries.filter(([, chunk]) => !chunk.src && chunk.name === stem)
+  return named.length === 1 ? named[0][0] : undefined
+}
 const entryKey = entries.find(([, chunk]) => chunk.isEntry)?.[0]
-// Screens are the files named *Route.tsx (see src/app/Routes.tsx).
+// Screens are the files named *Route.tsx (see src/app/Routes.tsx), plus the
+// join screen an invite link opens. Each lists the chunks its first load needs.
 const screens = [
-  ['HomeRoute', keyOf(HOME_LOADS)],
+  ['HomeRoute', [keyOf(HOME_LOADS)]],
   ...entries
     .filter(([, chunk]) => chunk.isDynamicEntry && chunk.src?.endsWith('Route.tsx'))
-    .map(([key, chunk]) => [chunk.name ?? key, key]),
+    .map(([key, chunk]) => [chunk.name ?? key, [key]]),
+  ['JoinScreen', [keyOf(GROUP_ROUTE), keyOf(JOIN_SCREEN)]],
 ]
+for (const [name, keys] of screens) {
+  if (keys.some((key) => !key)) throw new Error(`A chunk for ${name} is missing from ${MANIFEST}`)
+}
 
 let failed = false
 const report = []
-for (const [name, key] of screens) {
+for (const [name, keys] of screens) {
   const loads = CATALOGS.map((catalog) => {
     const files = closure(entryKey)
     for (const css of pageCss) files.css.add(css)
     closure(keyOf(catalog), files)
-    closure(key, files)
+    for (const key of keys) closure(key, files)
     return files
   })
   const total = (files, kind) => [...files[kind]].reduce((sum, file) => sum + gzipped(file), 0)

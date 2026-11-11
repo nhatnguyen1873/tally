@@ -27,6 +27,7 @@ beforeEach(async () => {
 
 afterEach(() => {
   vi.useRealTimers()
+  vi.restoreAllMocks()
 })
 
 async function trip() {
@@ -166,6 +167,8 @@ describe('GroupStore', () => {
   })
 
   it('starts its clock afresh when the saved one is out of range', async () => {
+    // All in one millisecond: the new clock must still follow the group's creation.
+    vi.spyOn(Date, 'now').mockReturnValue(Date.now())
     const { id, store } = await trip()
     const { record } = store.getSnapshot()
     await saveOps({ ...record, clock: `${'9'.repeat(15)}:999999:${record.actor}` }, [])
@@ -187,6 +190,35 @@ describe('GroupStore', () => {
     const an = memberIdOf(store, 'An')
     await store.update({ me: an })
     expect((await GroupStore.load(id))?.getSnapshot().record.me).toBe(an)
+  })
+
+  it('keeps every change when several happen at once', async () => {
+    const { id, store } = await trip()
+    const an = memberIdOf(store, 'An')
+    const { record } = store.getSnapshot()
+    // A second on, so it sorts after the group's creation even within the same millisecond.
+    const other = { wall: Date.now() + 1000, count: 0, node: 'other-phone-00000' }
+    const rename = makeOp(other, record.me ?? '', 'group', id, { name: 'Đà Lạt 2026' })
+    // Sync receiving, choosing who you are, reading the feed and writing,
+    // none of them waiting for the others.
+    await Promise.all([
+      store.receive([rename], 7),
+      store.update({ me: an }),
+      store.update({ readUpTo: rename.hlc }),
+      store.synced([], 9),
+    ])
+    const [op] = await store.write([{ entity: 'member', key: an, set: { name: 'Anh' } }])
+
+    for (const view of [store.getSnapshot(), (await GroupStore.load(id))?.getSnapshot()]) {
+      expect(view?.record).toMatchObject({
+        me: an,
+        readUpTo: rename.hlc,
+        cursor: 9,
+        clock: op?.hlc,
+      })
+      expect(view?.state.group?.name).toBe('Đà Lạt 2026')
+      expect(view?.state.members.get(an)?.name).toBe('Anh')
+    }
   })
 
   it('stops notifying a listener once it unsubscribes', async () => {

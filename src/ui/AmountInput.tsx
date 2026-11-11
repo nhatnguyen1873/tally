@@ -38,9 +38,13 @@ export function AmountInput({
   const [shown, setShown] = useState(value)
 
   // A new value from outside (prefilled, or reset) replaces what was typed.
+  // Zero and empty mean the same here: a split field stores a typed "0" (or
+  // the "0." on the way to "0.5") as 0 and shows 0 as empty, and replacing
+  // the text then would wipe what's being typed.
   if (value !== shown) {
     setShown(value)
-    if (amountOf(readAmountText(text, digits, symbols).decimal, digits) !== value) {
+    const typed = amountOf(readAmountText(text, digits, symbols).decimal, digits)
+    if ((typed === 0 ? null : typed) !== (value === 0 ? null : value)) {
       setText(displayAmount(value, digits, symbols))
     }
   }

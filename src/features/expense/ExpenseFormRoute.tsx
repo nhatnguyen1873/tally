@@ -3,7 +3,14 @@ import { useLocation, useParams } from 'wouter'
 
 import type { Expense } from '../../domain/fold.ts'
 import { randomId } from '../../domain/ids.ts'
-import { CATEGORIES, type Category, type ExpenseMoney, LIMITS } from '../../domain/model.ts'
+import {
+  CATEGORIES,
+  type Category,
+  DATE_RANGE,
+  type ExpenseMoney,
+  isValidDate,
+  LIMITS,
+} from '../../domain/model.ts'
 import { isValidAmount } from '../../domain/money.ts'
 import { splitMembers } from '../../domain/split.ts'
 import { stableStringify } from '../../domain/util.ts'
@@ -81,6 +88,7 @@ function ExpenseForm({ group, expense }: { group: Group; expense: Expense | null
   const errors = {
     amount: !amount ? t('error.amount') : isValidAmount(amount) ? null : t('error.amountTooLarge'),
     title: cleanText(title) ? null : t('error.title'),
+    date: isValidDate(date) ? null : t('error.date'),
     split:
       result.problem === 'nobody'
         ? t('error.splitNobody')
@@ -98,7 +106,14 @@ function ExpenseForm({ group, expense }: { group: Group; expense: Expense | null
 
   async function save(event: SubmitEvent) {
     event.preventDefault()
-    if (errors.amount || errors.title || errors.split || !result.split || amount === null) {
+    if (
+      errors.amount ||
+      errors.title ||
+      errors.date ||
+      errors.split ||
+      !result.split ||
+      amount === null
+    ) {
       setAttempts((count) => count + 1)
       return
     }
@@ -180,7 +195,10 @@ function ExpenseForm({ group, expense }: { group: Group; expense: Expense | null
           label={t('expense.date')}
           type="date"
           value={date}
+          min={DATE_RANGE.min}
+          max={DATE_RANGE.max}
           required
+          error={shown ? errors.date : null}
           onValue={(value) => {
             if (value) setDate(value)
           }}

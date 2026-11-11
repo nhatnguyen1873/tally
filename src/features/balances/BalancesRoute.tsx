@@ -2,7 +2,7 @@ import { useId } from 'react'
 
 import { balances, totalsByCategory } from '../../domain/balances.ts'
 import { randomId } from '../../domain/ids.ts'
-import { settleUp, type Transfer } from '../../domain/settle.ts'
+import { settleUp, type Transfer, transferPayments } from '../../domain/settle.ts'
 import { todayIso } from '../../i18n/format.ts'
 import { useI18n } from '../../i18n/I18nProvider.tsx'
 import { Avatar } from '../../ui/Avatar.tsx'
@@ -131,15 +131,21 @@ function TransferRow({ group, transfer }: { group: Group; transfer: Transfer }) 
   })
 
   async function markPaid() {
-    const key = randomId()
-    await group.store.write([
-      { entity: 'payment', key, set: { money: { ...transfer }, date: todayIso() } },
-    ])
+    const { from, to } = transfer
+    const date = todayIso()
+    const payments = transferPayments(transfer.amount).map((amount) => ({
+      key: randomId(),
+      set: { money: { amount, from, to }, date },
+    }))
+    await group.store.write(payments.map(({ key, set }) => ({ entity: 'payment', key, set })))
     toast({
       text: t('payment.recorded'),
       action: {
         label: t('action.undo'),
-        run: () => void group.store.write([{ entity: 'payment', key, set: { deleted: true } }]),
+        run: () =>
+          void group.store.write(
+            payments.map(({ key }) => ({ entity: 'payment', key, set: { deleted: true } })),
+          ),
       },
     })
   }

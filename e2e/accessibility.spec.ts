@@ -227,6 +227,13 @@ test.describe('keyboard only', () => {
     await page.keyboard.press('Escape')
     await expect(sheet).toBeHidden()
     await expect(share).toBeFocused()
+
+    // Its Close button returns focus too.
+    await page.keyboard.press('Enter')
+    await expect(sheet.getByRole('button', { name: 'Close' })).toBeFocused()
+    await page.keyboard.press('Enter')
+    await expect(sheet).toBeHidden()
+    await expect(share).toBeFocused()
   })
 })
 
